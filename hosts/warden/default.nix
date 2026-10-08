@@ -178,11 +178,11 @@
     extraGroups = [ "wheel" "networkmanager" "docker" ];
     shell = pkgs.fish;
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClNgLOMFRXUOo87H7yR3hXgdEwci1sdSYHOh7P0p4Cb wyli@scout-darwin.local"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
     ];
   };
   users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClNgLOMFRXUOo87H7yR3hXgdEwci1sdSYHOh7P0p4Cb wyli@scout-darwin.local"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
   ];
   programs.fish.enable = true;
 
