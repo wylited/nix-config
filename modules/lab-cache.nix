@@ -16,11 +16,12 @@
 let
   endpoint = "https://attic.ecemaker.space";
   cacheName = "maker";
-  # Token file is gitignored (this repo is public). When absent — e.g. a fresh
-  # clone on a new machine — the module no-ops and nix uses the official cache
-  # only; the few warden-specific paths just build locally. Paste the token
-  # into modules/attic-token.txt to activate the lab cache.
-  tokenPath = ./attic-token.txt;
+  # Token lives OUTSIDE the repo at /etc/nix/attic-token.txt (mode 0600):
+  # git-tree flake evals can't see gitignored files, so an in-repo token file
+  # silently no-ops on rebuilds. Absolute path = machine-local secret; the
+  # sops-nix migration (plan 03) will own this file later. Absent file =>
+  # module no-ops and nix uses the official cache only.
+  tokenPath = "/etc/nix/attic-token.txt";
   hasToken = builtins.pathExists tokenPath;
 in
 {
