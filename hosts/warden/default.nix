@@ -145,11 +145,15 @@
     # TODO: append any further args from the Arch unit
   };
 
-  # replaces the Arch nightly-update.timer (whose target script no longer exists!)
+  # Replaces the Arch nightly-update.timer. DISABLED for now: it evals the
+  # github tree, which lacks the gitignored attic token, so a 02:00 run would
+  # silently strip the lab-cache wiring. Re-enable once the token moves to
+  # sops-nix (plan 03) — until then rebuild from the local checkout:
+  #   sudo nixos-rebuild switch --flake /home/wyli/Repos/nix-config#warden
   system.autoUpgrade = {
-    enable = true;
+    enable = false;
     dates = "02:00";
-    flake = "github:wylited/nix-config#warden";    # TODO: real repo URL when pushed
+    flake = "github:wylited/nix-config#warden";
     flags = [ "--commit-lock-file" ];
   };
 
