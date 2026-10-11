@@ -1,4 +1,4 @@
-# asahi — NixOS on the M1 Pro (plan 05). EVAL STUB.
+# scout-asahi (sa) — NixOS on the M1 Pro (plan 05). EVAL STUB.
 # Missing (add before install):
 #   inputs.nixos-apple-silicon (github:nix-community/nixos-apple-silicon)
 #   -> hardware.asahi.enable = true; + their bootloader modules (m1n1/u-boot,
@@ -10,7 +10,7 @@
 
   boot.loader.systemd-boot.enable = true;   # TODO: replace with apple-silicon boot chain
 
-  networking.hostName = "asahi";
+  networking.hostName = "scout-asahi";
   networking.networkmanager.enable = true;
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];

@@ -1,5 +1,5 @@
 {
-  description = "Wyliteds multi-host nix config — DRAFT (plans: ~/nix-migration/)";
+  description = "Wylited's homelab config — fleet: warden, scout-darwin, scout-asahi, rogue-glyph, artificer (plan: ./../PLAN.md)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -25,12 +25,12 @@
     # hardware-specific NixOS modules (warden: Cezanne laptop — plan 03 input list)
     nixos-hardware.url = "github:NixOS/nixos-hardware";
 
-    # TODO when asahi lands: nixos-apple-silicon input
-    #   github:nix-community/nixos-apple-silicon (see plan 05)
+    # TODO when scout-asahi lands: nixos-apple-silicon input
+    #   github:nix-community/nixos-apple-silicon (see nix-migration plan 05)
   };
 
   outputs = inputs@{ self, nixpkgs, nix-darwin, home-manager, ... }: {
-    # ===================== macOS (existing, ported 1:1) =====================
+    # ============ scout-darwin (sd — M1 Pro MacBook, macOS boot) ============
     darwinConfigurations.scout-darwin = nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
 
@@ -49,7 +49,7 @@
       ];
     };
 
-    # ===================== warden (Arch -> NixOS, plan 08) =====================
+    # ============ warden (wa — homeserver, all of PLAN.md) ============
     nixosConfigurations.warden = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = { inherit self inputs; };
@@ -66,12 +66,12 @@
       ];
     };
 
-    # ===================== asahi (same M1 Pro, other boot, plan 05) =====================
-    nixosConfigurations.asahi = nixpkgs.lib.nixosSystem {
+    # ============ scout-asahi (sa — same M1 Pro, Asahi NixOS boot, plan 05) ============
+    nixosConfigurations.scout-asahi = nixpkgs.lib.nixosSystem {
       system = "aarch64-linux";
       specialArgs = { inherit self inputs; };
       modules = [
-        ./hosts/asahi
+        ./hosts/scout-asahi
         home-manager.nixosModules.home-manager {
           home-manager = {
             useGlobalPkgs = true;
@@ -83,12 +83,13 @@
       ];
     };
 
-    # ===================== rpi5 (8 GB, sd image, plan 03) =====================
-    nixosConfigurations.rpi5 = nixpkgs.lib.nixosSystem {
+    # ============ artificer (at — rpi5 8 GB; archetype named 2026-10-11,
+    #               hosting deferred — joins the tailnet when needed) ============
+    nixosConfigurations.artificer = nixpkgs.lib.nixosSystem {
       system = "aarch64-linux";
       specialArgs = { inherit self inputs; };
       modules = [
-        ./hosts/rpi5
+        ./hosts/artificer
       ];
     };
   };

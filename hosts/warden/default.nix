@@ -9,6 +9,12 @@
     ./matrix.nix # Synapse + mautrix bridges; see ~/nix-migration/10-matrix-on-warden.md
     inputs.nixos-hardware.nixosModules.common-cpu-amd
     ../../modules/lab-cache.nix # makerspace attic cache (pull + push)
+    ../../modules/dns.nix       # plan 12 §1 — AdGuard Home, wyli.tech split DNS
+    ../../modules/ingress.nix   # plan 12 §0 — caddy + *.wyli.tech wildcard (no-ops without CF token)
+    ../../modules/immich.nix    # plan 12 §2 — native immich, fresh library
+    ../../modules/caldav.nix    # plan 12 §3 — radicale (CalDAV + CardDAV)
+    ../../modules/whisper.nix   # plan 12 §8 — GPU Mode B + speaches
+    ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
   ];
 
   # ================= boot / basics =================
@@ -26,6 +32,8 @@
   };
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  # nvidia driver (modules/whisper.nix) is the only unfree package on warden
+  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [ "nvidia-x11" "nvidia-persistenced" ];
   # plan 01/03 hygiene — the Mac's 103 generations are the cautionary tale:
   nix.gc = { automatic = true; dates = "weekly"; options = "--delete-older-than 30d"; };
   nix.settings.auto-optimise-store = true;
@@ -81,10 +89,9 @@
     btrfs-progs
     ryzenadj
   ];
-  # immich: /home/wyli/apps/immich (compose + .env + library) is GONE with the
-  # wipe — restore from the 2026-10-07 backup before `docker compose up -d`.
-  # NOTE: compose references a caddy_net network + an (exited) caddy container —
-  # verify whether caddy is wanted again or expose :2283 directly.
+  # docker is the runtime for: immich-ML (cuda), speaches, mongo per dev lane.
+  # immich itself is NATIVE now — see ../../modules/immich.nix (plan 12 §2);
+  # the old compose stack is gone by decision, no restore.
 
   # ================= services =================
   services.syncthing = {
@@ -104,6 +111,10 @@
   services.tlp.enable = true;      # laptop power (Arch: tlp + tlp-pd + tlp-rdw)
 
   zramSwap.enable = true;          # Arch: zram-generator, 4G
+  # pressure kills the fattest cgroup instead of kernel-OOM roulette
+  # (PLAN §11 — every MemoryMax sits ABOVE real working set; caps below it
+  # cause restart loops, the ms.api production lesson)
+  systemd.oomd.enable = true;
 
   # ================= desktop responsiveness (omarchy-style) =====================
   # zen is binary-cached and sched_ext-capable. The CachyOS kernel (clang
@@ -158,22 +169,10 @@
   };
 
   # ================= GPU =================
-  # Mode A (default, plan 08): headless — no NVIDIA driver loaded; the RTX 3050
-  # is an Optimus 3D controller with no display outputs and self-suspends (~0 W).
-  # Mode B (on demand), uncomment when CUDA/graphics is wanted:
-  # hardware.graphics.enable = true;
-  # services.xserver.videoDrivers = [ "amdgpu" "nvidia" ];
-  # hardware.nvidia = {
-  #   package = nvidiaPackages.stable;        # Ampere — mainline, no 580xx needed
-  #   modesetting.enable = true;
-  #   powerManagement.enable = true;
-  #   powerManagement.finegrained = true;     # RTD3
-  #   prime = {
-  #     offload.enableOffloadCmd = true;      # `prime-run <app>`
-  #     amdgpuBusId = "PCI:4:0:0";
-  #     nvidiaBusId = "PCI:1:0:0";
-  #   };
-  # };
+  # Mode B is ON — brought up in ../../modules/whisper.nix (plan 12 §8):
+  # compute-only dGPU (amdgpu keeps the display path), RTD3 fine-grained
+  # power management, nvidia container runtime for speaches + immich-ML.
+  # VRAM is shared between them; see PLAN.md §11 for the budget.
 
   # ================= user =================
   users.users.wyli = {

@@ -1,4 +1,6 @@
-# rpi5 — 8 GB, raw sd-image (plan 03). Build on asahi/warden, dd to card.
+# artificer (at) — the rpi5, 8 GB, raw sd-image (plan 03). Archetype named
+# 2026-10-11; hosting deferred — builds the sd image, joins the tailnet when
+# it's actually needed. Build on asahi/warden, dd to card.
 # Pi 5 boot files require nixos-unstable — verify the shared nixpkgs input is
 # new enough at build time, else add a dedicated unstable input (plan 03 §5).
 { config, pkgs, inputs, ... }:
@@ -15,7 +17,7 @@
   # Pi boots via firmware + extlinux, not systemd-boot:
   boot.loader.generic-extlinux-compatible.enable = true;
 
-  networking.hostName = "rpi5";
+  networking.hostName = "artificer";
   networking.networkmanager.enable = true; # or wpa_supplicant for headless wifi
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
