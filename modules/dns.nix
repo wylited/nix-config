@@ -43,7 +43,7 @@
         { domain = "sd.wyli.tech"; answer = "100.64.0.2"; }            # scout-darwin
         { domain = "sa.wyli.tech"; answer = "100.64.0.3"; }            # scout-asahi
         { domain = "rg.wyli.tech"; answer = "100.64.0.4"; }            # rogue-glyph
-        { domain = "ad.wyli.tech"; answer = "100.64.0.5"; }            # artificer-debian (rpi5, Debian, when it joins)
+        { domain = "an.wyli.tech"; answer = "100.64.0.5"; }            # artificer-nixos (rpi5, when it joins)
       ];
     };
   };

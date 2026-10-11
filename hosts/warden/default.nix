@@ -93,6 +93,10 @@
   # immich itself is NATIVE now — see ../../modules/immich.nix (plan 12 §2);
   # the old compose stack is gone by decision, no restore.
 
+  # arm64 on demand: builds artificer-nixos's sd-image locally + arm64 docker
+  # images via qemu (plan 12 §9). Emulated = slow, fine for images/closures.
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
   # ================= services =================
   services.syncthing = {
     enable = true;

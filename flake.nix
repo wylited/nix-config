@@ -83,11 +83,13 @@
       ];
     };
 
-    # ============ artificer — rpi5, 8 GB. Archetype named 2026-10-11, but the
-    #               pi RUNS DEBIAN (tailnet node artificer-debian, ad.wyli.tech,
-    #               outside this flake). This entry is the drafted NixOS sd-image
-    #               for a possible future boot — named artificer-nixos per the
-    #               fleet scheme. Hosting deferred. ============
+    # ============ artificer (an — rpi5, 8 GB, NixOS sd-image). Archetype
+    #               named 2026-10-11; hosting deferred. Provisioning route
+    #               decided 2026-10-11: build the sd-image on warden (binfmt),
+    #               dd to card/USB-SSD, boot — then remote rebuilds from
+    #               warden. nixos-anywhere skipped: kexec is the flaky part
+    #               on Pi kernels, and the sd-image module owns the Pi-5
+    #               firmware/boot files for us. ============
     nixosConfigurations.artificer-nixos = nixpkgs.lib.nixosSystem {
       system = "aarch64-linux";
       specialArgs = { inherit self inputs; };
