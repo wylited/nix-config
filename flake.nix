@@ -83,9 +83,12 @@
       ];
     };
 
-    # ============ artificer (at — rpi5 8 GB; archetype named 2026-10-11,
-    #               hosting deferred — joins the tailnet when needed) ============
-    nixosConfigurations.artificer = nixpkgs.lib.nixosSystem {
+    # ============ artificer — rpi5, 8 GB. Archetype named 2026-10-11, but the
+    #               pi RUNS DEBIAN (tailnet node artificer-debian, ad.wyli.tech,
+    #               outside this flake). This entry is the drafted NixOS sd-image
+    #               for a possible future boot — named artificer-nixos per the
+    #               fleet scheme. Hosting deferred. ============
+    nixosConfigurations.artificer-nixos = nixpkgs.lib.nixosSystem {
       system = "aarch64-linux";
       specialArgs = { inherit self inputs; };
       modules = [
