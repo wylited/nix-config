@@ -14,7 +14,8 @@
 # dedicated unstable input needed.
 #
 # Wired for first boot (no display, no sops yet):
-#   • ethernet DHCP via NetworkManager
+#   • ethernet DHCP via NetworkManager; WiFi firmware baked in — HDMI+keyboard
+#     autologins wyli, then `nmcli device wifi connect <SSID>` for wifi-only spots
 #   • ssh key-only, the wylited key baked in (wyli + root)
 #   • passwordless sudo for wyli (headless bring-up tradeoff — tighten with a
 #     sops'd password hash when plan 03's sops-nix lands)
@@ -37,7 +38,18 @@
   boot.loader.generic-extlinux-compatible.enable = true;
 
   networking.hostName = "artificer-nixos";
-  networking.networkmanager.enable = true; # ethernet DHCP out of the box; add wifi later if ever
+  networking.networkmanager.enable = true; # ethernet DHCP out of the box
+
+  # WiFi fallback (Pi 5 = same CYW43455 as Pi 4): brcmfmac is in the generic
+  # aarch64 kernel (arm64 defconfig, as module) but the image ships no
+  # firmware by default — this package brings the RPi-Distro blobs + the
+  # Pi-5 nvram (brcmfmac43455-sdio.raspberrypi,5-model-b.txt).
+  hardware.firmware = [ pkgs.raspberrypiWirelessFirmware ];
+
+  # headless recovery: HDMI + keyboard drops straight into a wyli shell
+  # (the image has NO passwords — ssh stays key-only), then:
+  #   nmcli device wifi connect <SSID> password <pw>
+  services.getty.autologinUser = "wyli";
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nix.gc = { automatic = true; dates = "weekly"; options = "--delete-older-than 30d"; };
