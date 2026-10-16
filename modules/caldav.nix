@@ -17,7 +17,10 @@
       auth = {
         type = "htpasswd";
         htpasswd_filename = "/etc/nix/radicale-htpasswd";
-        htpasswd_encryption = "autodetect";
+        # "md5" = bare hex md5 (radicale core, no passlib). nixpkgs' radicale
+        # doesn't ship passlib, so bcrypt/autodetect would fail at auth time.
+        # Acceptable: TLS terminates at caddy, file is root:radicale 0640.
+        htpasswd_encryption = "md5";
       };
       storage.filesystem_folder = "/var/lib/radicale/collections";
       # rights default = owner_only — single user, nothing to relax

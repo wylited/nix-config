@@ -11,18 +11,24 @@
 # create it, then `nixos-rebuild switch` again to bring ingress up.
 { config, lib, pkgs, ... }:
 let
-  # service hostname → loopback port it terminates for
-  routes = {
-    "immich.wyli.tech" = 2283;   # modules/immich.nix
-    "dav.wyli.tech"    = 5232;   # modules/caldav.nix (radicale)
-    "cal.wyli.tech"    = 8423;   # vibecoded CalDAV/CardDAV UI (v0 build, PLAN §3)
-    "stt.wyli.tech"    = 8000;   # modules/whisper.nix (speaches)
-    "dns.wyli.tech"    = 3000;   # modules/dns.nix (AdGuard Home admin)
-    # matrix.wyli.tech joins here when plan 10 deploys (synapse :8008)
-  };
+  # service hostname → loopback port it terminates for. Per-host: warden keeps
+  # the big services' vhosts, artificer (small static box) only dav/cal/dns.
+  routesCfg = config.wyli.ingress.routes;
   hasCfToken = builtins.pathExists "/etc/nix/acme-cf-token";
 in
 {
+  options.wyli.ingress.routes = lib.mkOption {
+    type = lib.types.attrsOf lib.types.port;
+    default = {
+      "immich.wyli.tech" = 2283;   # modules/immich.nix (warden)
+      "dav.wyli.tech"    = 5232;   # modules/caldav.nix (radicale)
+      "cal.wyli.tech"    = 8423;   # vibecoded CalDAV/CardDAV UI (v0 build, PLAN §3)
+      "stt.wyli.tech"    = 8000;   # modules/whisper.nix (speaches, warden)
+      "dns.wyli.tech"    = 3000;   # modules/dns.nix (AdGuard Home admin)
+      # matrix.wyli.tech joins here when plan 10 deploys (synapse :8008)
+    };
+    description = "service vhosts terminated by this host's caddy, name → loopback port";
+  };
   config = lib.mkIf hasCfToken {
     security.acme = {
       acceptTerms = true;
@@ -45,7 +51,7 @@ in
           useACMEHost = "wyli.tech";
           extraConfig = "reverse_proxy 127.0.0.1:${toString port}";
         })
-        routes;
+        routesCfg;
     };
 
     # tailnet-only TLS; DNS-01 needs no inbound 80/443 from the internet

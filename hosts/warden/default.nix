@@ -9,13 +9,20 @@
     ./matrix.nix # Synapse + mautrix bridges; see ~/nix-migration/10-matrix-on-warden.md
     inputs.nixos-hardware.nixosModules.common-cpu-amd
     ../../modules/lab-cache.nix # makerspace attic cache (pull + push)
-    ../../modules/dns.nix       # plan 12 §1 — AdGuard Home, wyli.tech split DNS
     ../../modules/ingress.nix   # plan 12 §0 — caddy + *.wyli.tech wildcard (no-ops without CF token)
     ../../modules/immich.nix    # plan 12 §2 — native immich, fresh library
-    ../../modules/caldav.nix    # plan 12 §3 — radicale (CalDAV + CardDAV)
     ../../modules/whisper.nix   # plan 12 §8 — GPU Mode B + speaches
     ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
   ];
+
+  # dns.nix + caldav.nix MOVED to artificer (2026-10-16, user decision — small
+  # always-on services shouldn't ride the big server). This host's caddy only
+  # terminates what actually runs here:
+  wyli.ingress.routes = {
+    "immich.wyli.tech" = 2283;
+    "stt.wyli.tech" = 8000;
+    # "matrix.wyli.tech" = 8008; # plan 10
+  };
 
   # ================= boot / basics =================
   boot.loader.systemd-boot.enable = true;          # matches current Arch bootloader

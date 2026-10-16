@@ -29,7 +29,17 @@
   imports = [
     "${inputs.nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
     ./hardware-configuration.nix
+    ../../modules/dns.nix       # plan 12 §1 — AGH tailnet resolver (host MOVED here 2026-10-16)
+    ../../modules/caldav.nix    # plan 12 §3 — radicale (host MOVED here 2026-10-16)
+    ../../modules/ingress.nix   # plan 12 §0 — caddy wildcard (no-ops without CF token)
   ];
+
+  # this host terminates only its own small services (big stuff stays warden):
+  wyli.ingress.routes = {
+    "dav.wyli.tech" = 5232;
+    "cal.wyli.tech" = 8423;
+    "dns.wyli.tech" = 3000;
+  };
 
   sdImage.compressImage = true;            # .img.zst out
   boot.zfs.forceImportRoot = false;        # silence 26.11 default warning (no zfs on this host)
