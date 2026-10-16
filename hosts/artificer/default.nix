@@ -31,14 +31,51 @@
     ./hardware-configuration.nix
     ../../modules/dns.nix       # plan 12 §1 — AGH tailnet resolver (host MOVED here 2026-10-16)
     ../../modules/caldav.nix    # plan 12 §3 — radicale (host MOVED here 2026-10-16)
-    ../../modules/ingress.nix   # plan 12 §0 — caddy wildcard (no-ops without CF token)
   ];
 
-  # this host terminates only its own small services (big stuff stays warden):
-  wyli.ingress.routes = {
-    "dav.wyli.tech" = 5232;
-    "cal.wyli.tech" = 8423;
-    "dns.wyli.tech" = 3000;
+  # TLS = tailscale cert (path B, 2026-10-16): real LE cert for
+  # artificer-nixos.story-tiaki.ts.net — NO Cloudflare token on this box, no
+  # public exposure, valid on the tailnet. Single vhost, radicale at the root
+  # so CalDAV/CardDAV discovery just works. AGH admin stays on :3000 (plain,
+  # tailnet-encrypted transport anyway). ingress.nix returns when the CF token
+  # lands and dav.wyli.tech names are wanted.
+  services.caddy = {
+    enable = true;
+    virtualHosts."artificer-nixos.story-tiaki.ts.net" = {
+      extraConfig = ''
+        tls /var/lib/ts-certs/cert.pem /var/lib/ts-certs/key.pem
+        reverse_proxy 127.0.0.1:5232
+      '';
+    };
+  };
+  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 443 ];
+
+  # tailscaled keeps the cert valid internally; this refetches the FILES daily
+  # and lets caddy see renewals. (tailscale cert no-ops when still valid.)
+  systemd.services.ts-cert-renew = {
+    description = "refetch tailscale cert files for caddy";
+    after = [ "network-online.target" ];
+    before = [ "caddy.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      WorkingDirectory = "/var/lib/ts-certs";
+      UMask = "0022";
+    };
+    script = ''
+      ${pkgs.tailscale}/bin/tailscale cert \
+        --cert-file cert.pem --key-file key.pem artificer-nixos.story-tiaki.ts.net
+      chgrp caddy cert.pem key.pem
+      chmod 644 cert.pem
+      chmod 640 key.pem
+      # --no-block: a synchronous reload here deadlocks (caddy start waits on
+      # this unit via before=; PID1 serializes). Enqueue and move on.
+      systemctl --no-block reload caddy || true
+    '';
+  };
+  systemd.timers.ts-cert-renew = {
+    timerConfig = { OnCalendar = "daily"; Persistent = true; };
+    wantedBy = [ "timers.target" ];
   };
 
   sdImage.compressImage = true;            # .img.zst out
