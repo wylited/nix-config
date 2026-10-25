@@ -47,7 +47,7 @@
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   # nvidia driver (modules/whisper.nix) is the only unfree package on warden
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [ "nvidia-x11" "nvidia-persistenced" ];
+  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [ "nvidia-x11" "nvidia-persistenced" "nvidia-kernel-modules" ];
   # plan 01/03 hygiene — the Mac's 103 generations are the cautionary tale:
   nix.gc = { automatic = true; dates = "weekly"; options = "--delete-older-than 30d"; };
   nix.settings.auto-optimise-store = true;
