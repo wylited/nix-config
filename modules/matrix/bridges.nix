@@ -100,7 +100,7 @@ let
   postgresUri = database: "postgresql://${database}@/${database}?host=/run/postgresql";
 
   mkCommon =
-    { port }:
+    { port, bot }:
     {
       homeserver = {
         # `hungry` is Beeper's homeserver and makes the bridge verify it against
@@ -112,6 +112,13 @@ let
       appservice = {
         hostname = cfg.listenAddress;
         address = "http://${cfg.listenAddress}:${toString port}";
+        # The listener must bind exactly what the registration's url advertises
+        # (instagram otherwise kept its upstream default 29330 while synapse
+        # pushed transactions to 29320), and the bot username must be pinned or
+        # --generate-registration mints a random sender_localpart that does not
+        # match the bot namespace (2026-10-26).
+        port = port;
+        bot.username = bot;
       };
       bridge.permissions = {
         # Levels are block < relay < commands < user < admin; `admin` is `user`
@@ -131,13 +138,14 @@ let
     {
       database,
       port,
+      bot,
       pickleKeyVar,
     }:
     let
       # `MAUTRIX_<X>_` prefix, e.g. MAUTRIX_WHATSAPP_ENCRYPTION_PICKLE_KEY
       prefix = lib.removeSuffix "_ENCRYPTION_PICKLE_KEY" pickleKeyVar;
     in
-    lib.recursiveUpdate (mkCommon { inherit port; }) {
+    lib.recursiveUpdate (mkCommon { inherit port bot; }) {
       database = {
         type = "postgres";
         uri = postgresUri database;
@@ -173,8 +181,8 @@ let
   # unknown key that mautrix-discord silently ignores, which would leave the
   # bridge unencrypted while the other two are encrypted.
   mkLegacySettings =
-    { database, port }:
-    lib.recursiveUpdate (mkCommon { inherit port; }) {
+    { database, port, bot }:
+    lib.recursiveUpdate (mkCommon { inherit port bot; }) {
       appservice.database = {
         type = "postgres";
         uri = postgresUri database;
@@ -190,18 +198,21 @@ let
     whatsapp = lib.recursiveUpdate (mkBridgev2Settings {
       database = bridges.whatsapp.database;
       port = bridges.whatsapp.appservicePort;
+      bot = "whatsappbot";
       pickleKeyVar = "MAUTRIX_WHATSAPP_ENCRYPTION_PICKLE_KEY";
     }) bridges.whatsapp.settings;
 
     instagram = lib.recursiveUpdate (mkBridgev2Settings {
       database = bridges.instagram.database;
       port = bridges.instagram.appservicePort;
+      bot = "instagrambot";
       pickleKeyVar = "MAUTRIX_INSTAGRAM_ENCRYPTION_PICKLE_KEY";
     }) bridges.instagram.settings;
 
     discord = lib.recursiveUpdate (mkLegacySettings {
       database = bridges.discord.database;
       port = bridges.discord.appservicePort;
+      bot = "discordbot";
     }) bridges.discord.settings;
   };
 
