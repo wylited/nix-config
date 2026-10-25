@@ -135,6 +135,19 @@
     bind = "127.0.0.1";            # matches Arch (loopback only)
   };
 
+  # Shared PG cluster (immich + synapse + dev lanes, 15 GiB host). Mirrors
+  # immich's own postgres tuning (base-images postgresql.ssd.conf) at this
+  # scale — live values before: shared_buffers 320 MB / work_mem 4 MB, which
+  # throttles the Takeout-import job storm (thumbs + ML queue + WAL churn).
+  services.postgresql.settings = {
+    shared_buffers = "1GB";
+    effective_cache_size = "6GB";    # planner hint only, no allocation
+    work_mem = "8MB";                # ×~50 real conns stays well under budget
+    max_wal_size = "5GB";            # fewer checkpoints during bulk imports
+    random_page_cost = 1.2;          # NVMe (immich ssd.conf value)
+    effective_io_concurrency = 200;  # NVMe (immich ssd.conf value)
+  };
+
   services.tlp.enable = true;      # laptop power (Arch: tlp + tlp-pd + tlp-rdw)
 
   zramSwap.enable = true;          # Arch: zram-generator, 4G
