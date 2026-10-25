@@ -37,6 +37,20 @@
   services.immich.package =
     inputs.nixpkgs-immich.legacyPackages.x86_64-linux.immich;
 
+  # ================= backup target for artificer (the pi) ====================
+  # The pi's nightly restic lands here via sftp over the tailnet — see
+  # modules/pi-backup.nix (DRAFT, enable still off there; this dir + rule are
+  # harmless to deploy ahead of it). tmpfiles owns the directory; the hourly
+  # root snapper config above also snapshots /srv/backups, so a botched prune
+  # on the pi is undoable here for at least an hour after the fact.
+  systemd.tmpfiles.rules = [
+    "d /srv/backups/artificer 0700 wyli wyli -"
+  ];
+  # TODO (with step 3 of pi-backup.nix's bring-up list): append the pi's key
+  # to users.users.wyli.openssh.authorizedKeys.keys, restricted to sftp:
+  #   "restrict ssh-ed25519 <contents of the pi's /etc/nix/pi-backup_ed25519.pub> pi-backup@artificer"
+  # (uid 1000 above already keeps ownership stable across restores.)
+
   # ================= boot / basics =================
   boot.loader.systemd-boot.enable = true;          # matches current Arch bootloader
   boot.loader.efi.canTouchEfiVariables = true;
