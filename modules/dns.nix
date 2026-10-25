@@ -52,20 +52,20 @@
         protection_enabled = true;  # pipeline runs; blocklists below stay empty
         filtering_enabled = true;
         rewrites = [
-          # --- services (full words); dav/cal/dns live on an (pi) ---
-          { domain = "immich.wyli.tech"; answer = "100.64.0.1"; enabled = true; }        # warden (placeholder — off tailnet)
-          { domain = "dav.wyli.tech";    answer = "100.95.249.82"; enabled = true; }     # an — radicale
-          { domain = "cal.wyli.tech";    answer = "100.95.249.82"; enabled = true; }     # an — wycal UI (future)
-          { domain = "stt.wyli.tech";    answer = "100.64.0.1"; enabled = true; }        # warden (placeholder)
-          { domain = "matrix.wyli.tech"; answer = "100.64.0.1"; enabled = true; }        # warden (placeholder)
-          { domain = "dns.wyli.tech";    answer = "100.95.249.82"; enabled = true; }     # an — AGH admin
-          { domain = "ms.dev.wyli.tech"; answer = "100.64.0.1"; enabled = true; }        # warden (placeholder)
+          # --- services (full words); dav/cal/dns live on an (pi), rest on wa ---
+          { domain = "immich.wyli.tech"; answer = "100.68.142.0"; enabled = true; }   # wa (warden)
+          { domain = "dav.wyli.tech";    answer = "100.95.249.82"; enabled = true; }  # an — radicale
+          { domain = "cal.wyli.tech";    answer = "100.95.249.82"; enabled = true; }  # an — wycal UI (future)
+          { domain = "stt.wyli.tech";    answer = "100.68.142.0"; enabled = true; }   # wa
+          { domain = "matrix.wyli.tech"; answer = "100.68.142.0"; enabled = true; }   # wa (gated off, plan 10 pending)
+          { domain = "dns.wyli.tech";    answer = "100.95.249.82"; enabled = true; }  # an — AGH admin
+          { domain = "ms.dev.wyli.tech"; answer = "100.68.142.0"; enabled = true; }   # wa — dev lanes
           # --- machines (fleet short forms, PLAN.md §0.1) ---
-          { domain = "wa.wyli.tech"; answer = "100.64.0.1"; enabled = true; }            # warden (placeholder — off tailnet)
-          { domain = "sd.wyli.tech"; answer = "100.84.47.44"; enabled = true; }          # scout-darwin
-          { domain = "sa.wyli.tech"; answer = "100.64.0.2"; enabled = true; }            # scout-asahi (not joined yet)
-          { domain = "rg.wyli.tech"; answer = "100.127.195.50"; enabled = true; }        # rogue-glyph
-          { domain = "an.wyli.tech"; answer = "100.95.249.82"; enabled = true; }         # artificer-nixos (rpi5, this host)
+          { domain = "wa.wyli.tech"; answer = "100.68.142.0"; enabled = true; }       # warden
+          { domain = "sd.wyli.tech"; answer = "100.84.47.44"; enabled = true; }       # scout-darwin
+          { domain = "sa.wyli.tech"; answer = "100.64.0.2"; enabled = true; }         # scout-asahi (not joined yet)
+          { domain = "rg.wyli.tech"; answer = "100.127.195.50"; enabled = true; }     # rogue-glyph
+          { domain = "an.wyli.tech"; answer = "100.95.249.82"; enabled = true; }      # artificer-nixos (this host)
         ];
       };
     };
