@@ -12,7 +12,9 @@
 {
   services.immich = {
     enable = true;
-    host = "127.0.0.1";
+    host = "0.0.0.0";    # tailnet-only exposure via firewall — warden runs no
+                         # caddy (no CF token), so bind wide + gate with nft
+                         # (2026-10-26); loopback bind made it unreachable
     port = 2283;
     mediaLocation = "/srv/immich";
     accelerationDevices = [ "/dev/dri" ];  # iGPU VAAPI for video transcode
@@ -49,4 +51,7 @@
     startAt = lib.mkDefault "*-*-* 03:15:00";
     databases = [ "immich" ];
   };
+
+  # tailnet-only reachability for the immich UI (no caddy on this host)
+  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 2283 ];
 }

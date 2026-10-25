@@ -55,6 +55,8 @@
     volumes = [
       "/var/lib/speaches:/root/.cache/huggingface"   # model cache survives pulls
     ];
+
+
     extraOptions = [
       "--device=nvidia.com/gpu=all"  # CDI — podman has no "nvidia" OCI runtime (2026-10-25)
       "--memory=3g"      # PLAN §11
@@ -64,4 +66,7 @@
   systemd.tmpfiles.rules = [
     "d /var/lib/speaches 0700 root root -"
   ];
+
+  # tailnet-only reachability for speaches (no caddy on this host)
+  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 8000 ];
 }
