@@ -61,10 +61,11 @@ in
           }
           {
             type = "openai-compatible";
-            name = "deepseek";
-            api_base = "https://api.deepseek.com";
+            name = "lithosai";           # the actual DeepSeek-V4.1-Flash provider in use
+            api_base = "https://api.lithosai.cloud/v1";
             models = [
-              { name = "deepseek-v4.1-flash"; }
+              { name = "deepseek-ai/DeepSeek-V4.1-Flash"; }
+              { name = "deepseek-ai/DeepSeek-V4.1-Flash-fast"; }
             ];
           }
         ];
