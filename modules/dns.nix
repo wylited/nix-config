@@ -9,7 +9,8 @@
 # decision): resolver + rewrites + cache, no ad-blocking — rewrites only fire
 # when the pipeline runs, which is why filtering_enabled stays true here.
 #
-# Rewrites point at real tailnet IPs where devices have joined; PLACEHOLDER
+# Rewrites point at real tailnet IPs (warden rejoined 2026-10-25); only sa
+# holds a placeholder until scout-asahi joins the tailnet.
 # 100.64.0.1 marks names whose host isn't on the tailnet yet (warden is
 # offline in the tailnet as of 2026-10-16 — fix when warden rejoins).
 # mutableSettings=true means the UI owns /var/lib/adguardhome/AdGuardHome.yaml
@@ -50,14 +51,15 @@
       # reverted by the next restart.
       filtering = {
         protection_enabled = true;  # pipeline runs; blocklists below stay empty
-        filtering_enabled = true;
+        parental_enabled = false;    # pinned: yaml-merge left these UI-owned and
+        safebrowsing_enabled = false; # the pi had drifted them ON (audit 2026-10-26)
         rewrites = [
           # --- services (full words); dav/cal/dns live on an (pi), rest on wa ---
           { domain = "immich.wyli.tech"; answer = "100.68.142.0"; enabled = true; }   # wa (warden)
           { domain = "dav.wyli.tech";    answer = "100.95.249.82"; enabled = true; }  # an — radicale
           { domain = "cal.wyli.tech";    answer = "100.95.249.82"; enabled = true; }  # an — wycal UI (future)
           { domain = "stt.wyli.tech";    answer = "100.68.142.0"; enabled = true; }   # wa
-          { domain = "matrix.wyli.tech"; answer = "100.68.142.0"; enabled = true; }   # wa (gated off, plan 10 pending)
+          { domain = "matrix.wyli.tech"; answer = "100.68.142.0"; enabled = true; }   # wa — live (plan 10)
           { domain = "dns.wyli.tech";    answer = "100.95.249.82"; enabled = true; }  # an — AGH admin
           { domain = "ms.dev.wyli.tech"; answer = "100.68.142.0"; enabled = true; }   # wa — dev lanes
           # --- machines (fleet short forms, PLAN.md §0.1) ---

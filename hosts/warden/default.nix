@@ -1,14 +1,14 @@
-# warden — Arch -> NixOS draft (plan 08)
-# Eval-verified only; NOT yet installed anywhere. hardware-configuration.nix is a
-# placeholder built from the observed Arch fstab — regenerate at install time.
+# warden-arch — the 5800H/16GB/1TB homeserver. Deployed (fresh NixOS install
+# 2026-10-08, plan 11); runs immich + speaches + matrix + fallback DNS + the
+# ai stack (modules/ai.nix). Hardware-configuration regenerated at install.
 { config, pkgs, inputs, ... }:
 
 {
   imports = [
     ./hardware-configuration.nix
-  # matrix re-enabled 2026-10-26: FRESH deploy (no restore — old data died with
-  # Arch; Beeper replacement per plan 10). serverName aligned to the real node
-  # name warden-arch.story-tiaki.ts.net BEFORE first use (immutable after).
+  # matrix re-enabled 2026-10-26: FRESH deploy (no restore — old data died
+  # with Arch; Beeper replacement per plan 10). serverName = matrix.wyli.tech
+  # (plain-http caddy ingress, no tailscale serve — user decision 2026-10-26).
   ./matrix.nix # Synapse + mautrix bridges; see ~/nix-migration/10-matrix-on-warden.md
     ../../modules/dns.nix       # FALLBACK resolver (2026-10-25): identical module+rewrites as the
                                 # pi — Tailscale console lists both as wyli.tech nameservers; git
