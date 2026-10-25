@@ -19,6 +19,7 @@
     ../../modules/immich.nix    # plan 12 §2 — native immich, fresh library
     ../../modules/whisper.nix   # plan 12 §8 — GPU Mode B + speaches
     ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
+    ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
   ];
 
   # dns.nix + caldav.nix MOVED to artificer (2026-10-16, user decision — small

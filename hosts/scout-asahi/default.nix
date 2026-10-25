@@ -6,7 +6,10 @@
 { config, pkgs, inputs, ... }:
 
 {
-  imports = [ ./hardware-configuration.nix ];
+  imports = [
+    ./hardware-configuration.nix
+    ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
+  ];
 
   boot.loader.systemd-boot.enable = true;   # TODO: replace with apple-silicon boot chain
 
