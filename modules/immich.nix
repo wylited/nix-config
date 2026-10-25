@@ -31,7 +31,7 @@
     };
     volumes = [ "/var/lib/immich-ml:/cache" ];
     extraOptions = [
-      "--runtime=nvidia"
+      "--device=nvidia.com/gpu=all"   # CDI — podman has no "nvidia" OCI runtime (2026-10-25)
       "--memory=3g"       # PLAN §11 cap — set ABOVE working set (ms.api lesson)
     ];
   };

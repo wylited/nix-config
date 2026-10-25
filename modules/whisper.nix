@@ -52,7 +52,7 @@
       "/var/lib/speaches:/root/.cache/huggingface"   # model cache survives pulls
     ];
     extraOptions = [
-      "--runtime=nvidia"
+      "--device=nvidia.com/gpu=all"  # CDI — podman has no "nvidia" OCI runtime (2026-10-25)
       "--memory=3g"      # PLAN §11
     ];
   };
