@@ -42,9 +42,13 @@
     autoStart = true;
     ports = [ "127.0.0.1:8000:8000" ];
     environment = {
-      SPEACHES__WHISPER__MODEL = "Systran/faster-whisper-large-v3-turbo";
-      SPEACHES__WHISPER__COMPUTE_TYPE = "int8_float16";
-      SPEACHES__WHISPER__DEVICE = "cuda";
+      # verified against the image's config.py (2026-10-25): pydantic-settings
+      # with env_nested_delimiter="__" and NO prefix — WHISPER__FIELD, not
+      # SPEACHES__WHISPER__FIELD. No model field exists anymore: models load
+      # per-request into a TTL cache (ttl -1 = keep loaded; dedicated GPU box).
+      WHISPER__INFERENCE_DEVICE = "cuda";
+      WHISPER__COMPUTE_TYPE = "int8_float16";
+      WHISPER__TTL = "-1";
       NVIDIA_VISIBLE_DEVICES = "all";
       NVIDIA_DRIVER_CAPABILITIES = "compute,utility";
     };
