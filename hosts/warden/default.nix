@@ -84,6 +84,9 @@
     settings.PasswordAuthentication = false;
     # host keys copied from Arch /etc/ssh/ssh_host_* at install to keep identity
   };
+  # headless bring-up parity with artificer: no password exists at first boot,
+  # so sudo must not ask (ssh stays key-only). Tighten with sops (plan 03).
+  security.sudo.wheelNeedsPassword = false;
 
   # ================= docker: immich only (vvvm decommissioned) =================
   virtualisation.docker.enable = true;
