@@ -20,7 +20,9 @@
       CREATE DATABASE ms_dev OWNER wyli;
       CREATE DATABASE procurement OWNER wyli;
     '';
-    settings.shared_buffers = "256MB";   # lane-sized, not production-sized
+    # mkDefault: warden's cluster is shared with immich + synapse — the host
+    # file owns the real sizing now (hosts/warden/default.nix).
+    settings.shared_buffers = lib.mkDefault "256MB";   # lane-sized fallback
   };
 
   # hard ceiling for the one active lane's native services (PLAN §11)
