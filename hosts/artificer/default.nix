@@ -23,7 +23,7 @@
 #     reappears with sops)
 #   • external disk for storage-transfer work: DEFERRED by decision (2026-10-11)
 #     — attach later as a plain mount + whatever service needs it
-{ config, pkgs, inputs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
 {
   imports = [
@@ -33,6 +33,7 @@
     ../../modules/caldav.nix    # plan 12 §3 — radicale (host MOVED here 2026-10-16)
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
+    ../../modules/pi-backup.nix # DRAFT off — nightly restic to warden; enable after key bring-up
   ];
 
   # TLS = tailscale cert (path B, 2026-10-16): real LE cert for
@@ -78,6 +79,56 @@
   systemd.timers.ts-cert-renew = {
     timerConfig = { OnCalendar = "daily"; Persistent = true; };
     wantedBy = [ "timers.target" ];
+  };
+
+  # ================= resilience (SD card is the only disk) ===================
+  # Journal cap: 64 MiB today, but nothing stopped growth and the SD card is
+  # also /. Hard ceiling + retention so a chatty unit can't fill the card.
+  services.journald.extraConfig = ''
+    SystemMaxUse=200M
+    MaxRetentionSec=30day
+  '';
+
+  # Last-resort watchdog. `Restart=always` covers crashes; this covers the
+  # quiet death — unit inactive while the box still looks up. 15-min checks,
+  # 3 consecutive bad rounds (≥45 min) → reboot. tailscaled, AGH, radicale,
+  # caddy all restart at boot; if the fault is hardware the loop tops out at
+  # ~3 reboots/hour, which is loud in the journal. Strikes reset on any
+  # healthy round, so maintenance stops under 45 min never trip it.
+  systemd.services.pi-watchdog = {
+    description = "Reboot if core units stay dead for 45+ minutes";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "pi-watchdog" ''
+        set -u
+        state=/var/lib/pi-watchdog
+        ${lib.getExe' pkgs.coreutils "mkdir"} -p "$state"
+        bad=""
+        for u in tailscaled adguardhome radicale caddy; do
+          systemctl is-active --quiet "$u" || bad="$bad $u"
+        done
+        if [ -z "$bad" ]; then
+          ${lib.getExe' pkgs.coreutils "printf"} '0' > "$state/strikes"
+          exit 0
+        fi
+        strikes=$(${lib.getExe' pkgs.coreutils "cat"} "$state/strikes" 2>/dev/null || printf '0')
+        strikes=$((strikes + 1))
+        ${lib.getExe' pkgs.coreutils "printf"} '%s' "$strikes" > "$state/strikes"
+        echo "pi-watchdog: dead units ($bad), strike $strikes/3"
+        if [ "$strikes" -ge 3 ]; then
+          echo "pi-watchdog: rebooting — core units dead 45+ min ($bad)"
+          systemctl reboot
+        fi
+      '';
+    };
+  };
+  systemd.timers.pi-watchdog = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*:0/15";
+      Persistent = true;
+      RandomizedDelaySec = "2min";
+    };
   };
 
   sdImage.compressImage = true;            # .img.zst out
