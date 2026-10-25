@@ -57,7 +57,13 @@ in
           useACMEHost = lib.mkIf hasCfToken "wyli.tech";
           extraConfig = "reverse_proxy 127.0.0.1:${toString port}";
         })
-        routesCfg;
+        # tokenless: explicit http:// site addresses. auto_https off alone is
+        # not enough — a bare hostname still implies TLS and binds :443 (no
+        # certs there, tailscaled owns the port), leaving :80 unbound where
+        # the tailnet clients actually connect (2026-10-26).
+        (if hasCfToken
+          then routesCfg
+          else lib.mapAttrs' (n: p: lib.nameValuePair "http://${n}" p) routesCfg);
     };
 
     networking.firewall.interfaces."tailscale0".allowedTCPPorts =
