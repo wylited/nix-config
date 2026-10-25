@@ -13,8 +13,8 @@
     # id and access token. `warden` is the tailnet MagicDNS name of this host
     # (tailnet story-tiaki.ts.net), which is also the certificate `tailscale
     # serve` gets, so no domain registration or .well-known delegation is needed.
-    serverName = "warden.story-tiaki.ts.net";
-    clientUrl = "https://warden.story-tiaki.ts.net";
+    serverName = "warden-arch.story-tiaki.ts.net";
+    clientUrl = "https://warden-arch.story-tiaki.ts.net";
 
     owner = "wyli";
 

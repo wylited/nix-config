@@ -6,10 +6,10 @@
 {
   imports = [
     ./hardware-configuration.nix
-  # matrix GATED OFF 2026-10-25: synapse data died with Arch; healthcheck +
-  # restic units fail on the empty stack. Re-enable after the restore-vs-fresh
-  # decision (plan 10) — `git revert` this hunk or uncomment.
-  # ./matrix.nix # Synapse + mautrix bridges; see ~/nix-migration/10-matrix-on-warden.md
+  # matrix re-enabled 2026-10-26: FRESH deploy (no restore — old data died with
+  # Arch; Beeper replacement per plan 10). serverName aligned to the real node
+  # name warden-arch.story-tiaki.ts.net BEFORE first use (immutable after).
+  ./matrix.nix # Synapse + mautrix bridges; see ~/nix-migration/10-matrix-on-warden.md
     ../../modules/dns.nix       # FALLBACK resolver (2026-10-25): identical module+rewrites as the
                                 # pi — Tailscale console lists both as wyli.tech nameservers; git
                                 # is the single source of truth, drift is impossible by construction
