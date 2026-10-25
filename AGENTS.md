@@ -14,3 +14,14 @@ email is the ONLY one GitHub links to the wylited account.
 - `wyli@wyli.tech` is the ACME/ingress email (`modules/ingress.nix`) — it is
   NOT a commit identity. Never use it in git.
 - Message style: `<host-or-scope>: summary` (see `git log`).
+
+## Fleet hardening baseline
+
+- `modules/hardening.nix` (imported by deployed hosts, 2026-10-26 audit) owns
+  the sshd baseline (key-only: no password AND no PAM keyboard-interactive)
+  and journald size caps. All mkDefault — hosts override with plain values.
+- `security.sudo.wheelNeedsPassword = false` on warden/artificer is
+  DELIBERATE until plan 03 (sops-nix) lands: no password infrastructure
+  exists yet; sudo + secrets tighten together. Don't piecemeal it.
+- tailscale0 stays trusted: tailscaled's ts-input chain accepts tailnet
+  traffic before nixos-fw sees it — explicit port lists would be dead config.
