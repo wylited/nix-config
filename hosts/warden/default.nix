@@ -180,8 +180,13 @@
   # Replaces the Arch nightly-update.timer. DISABLED for now: it evals the
   # github tree, which lacks the gitignored attic token, so a 02:00 run would
   # silently strip the lab-cache wiring. Re-enable once the token moves to
-  # sops-nix (plan 03) — until then rebuild from the local checkout:
-  #   sudo nixos-rebuild switch --flake /home/wyli/Repos/nix-config#warden
+  # sops-nix (plan 03) — until then rebuild from the local checkout.
+  # NOTE (verified 2026-10-25): a plain `--flake /home/wyli/Repos/nix-config`
+  # is a git+file ref — flake.nix is then evaluated PURE, so
+  # `builtins.pathExists "/etc/nix/attic-token.txt"` (lab-cache.nix) returns
+  # false and the module silently no-ops — the rebuild produces the identical
+  # generation. The working invocation evaluates the working tree impurely:
+  #   sudo nixos-rebuild switch --flake "path:/home/wyli/Repos/nix-config#warden" --impure
   system.autoUpgrade = {
     enable = false;
     dates = "02:00";
