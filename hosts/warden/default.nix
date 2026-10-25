@@ -35,7 +35,7 @@
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.configurationLimit = 5; # /boot is only 1 GiB
 
-  networking.hostName = "warden";
+  networking.hostName = "warden-arch";   # matches the tailnet node name (user pref 2026-10-25)
   networking.networkmanager.enable = true;
   networking.firewall = {
     enable = true;
@@ -197,6 +197,9 @@
   # ================= user =================
   users.users.wyli = {
     isNormalUser = true;
+    # yescrypt hash at /etc/nix/warden-passwd (root:root 0600, NOT in git —
+    # repo is public). Console/sudo login; sshd stays key-only + tailscale ssh.
+    hashedPasswordFile = "/etc/nix/warden-passwd";
     uid = 1000;                                    # backup restore preserves ownership
     extraGroups = [ "wheel" "networkmanager" "docker" ];
     shell = pkgs.fish;
