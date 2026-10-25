@@ -10,6 +10,9 @@
   # restic units fail on the empty stack. Re-enable after the restore-vs-fresh
   # decision (plan 10) — `git revert` this hunk or uncomment.
   # ./matrix.nix # Synapse + mautrix bridges; see ~/nix-migration/10-matrix-on-warden.md
+    ../../modules/dns.nix       # FALLBACK resolver (2026-10-25): identical module+rewrites as the
+                                # pi — Tailscale console lists both as wyli.tech nameservers; git
+                                # is the single source of truth, drift is impossible by construction
     inputs.nixos-hardware.nixosModules.common-cpu-amd
     ../../modules/lab-cache.nix # makerspace attic cache (pull + push)
     ../../modules/ingress.nix   # plan 12 §0 — caddy + *.wyli.tech wildcard (no-ops without CF token)
