@@ -56,6 +56,9 @@ in
         # Extra config file, read after the store config, so nothing has to be
         # inlined into services.matrix-synapse.settings (which is world-readable
         # in /nix/store). Readable by the matrix-synapse group only.
+        # ownership asserted on EVERY run (outside the first-boot guard): the
+        # one-shot chgrp with `|| true` inside the guard lost the race on the
+        # very first run and synapse died EACCES on its secrets file.
         if [ ! -f "$d/synapse-secrets.yaml" ]; then
           umask 0027
           tmp="$d/.synapse-secrets.yaml.$$"
@@ -65,10 +68,10 @@ in
         registration_shared_secret: "$(rand)"
         form_secret: "$(rand)"
         EOF
-          chgrp matrix-synapse "$tmp" 2>/dev/null || true
-          chmod 0640 "$tmp"
           mv "$tmp" "$d/synapse-secrets.yaml"
         fi
+        chgrp matrix-synapse "$d/synapse-secrets.yaml"
+        chmod 0640 "$d/synapse-secrets.yaml"
 
         # --- bridge environment files ----------------------------------------
         # Names are per bridge because each unit reads its own file.
