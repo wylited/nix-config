@@ -49,6 +49,9 @@ in
 
     services.caddy = {
       enable = true;
+      # tokenless: no TLS at all — caddy's automatic HTTPS would grab :443
+      # (held by tailscaled) and try cert issuance we don't want.
+      globalConfig = if hasCfToken then "" else "auto_https off";
       virtualHosts = builtins.mapAttrs
         (name: port: {
           useACMEHost = lib.mkIf hasCfToken "wyli.tech";

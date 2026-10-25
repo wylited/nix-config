@@ -54,4 +54,7 @@
 
   # tailnet-only reachability for the immich UI (no caddy on this host)
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 2283 ];
+  # LAN-direct for fast uploads from same-network devices (home wifi):
+  # http://<warden-LAN-IP>:2283 — bypasses the tunnel entirely
+  networking.firewall.interfaces."end0".allowedTCPPorts = [ 2283 ];
 }

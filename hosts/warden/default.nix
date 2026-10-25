@@ -19,6 +19,7 @@
     ../../modules/immich.nix    # plan 12 §2 — native immich, fresh library
     ../../modules/whisper.nix   # plan 12 §8 — GPU Mode B + speaches
     ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
+    ../../modules/ai.nix       # pi agent + aichat (MCP-first, empty profiles) — 2026-10-26
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
   ];
 
