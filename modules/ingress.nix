@@ -29,6 +29,23 @@ in
     };
     description = "service vhosts terminated by this host's caddy, name → loopback port";
   };
+  # ---- mode 1: no CF token → plain HTTP on :80, tailnet-only ----------------
+  # (2026-10-26: the wildcard/DNS-01 path stays parked; WireGuard already
+  # encrypts the transport, so bare http://name is fine on the tailnet)
+  config = lib.mkIf (!hasCfToken) {
+    services.caddy = {
+      enable = true;
+      virtualHosts = builtins.mapAttrs
+        (name: port: {
+          # no serverAliases acme — plain http host match
+          extraConfig = "reverse_proxy 127.0.0.1:${toString port}";
+        })
+        routesCfg;
+    };
+    networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 80 ];
+  };
+
+  # ---- mode 2: CF token present → wildcard TLS via DNS-01 (unchanged) ------
   config = lib.mkIf hasCfToken {
     security.acme = {
       acceptTerms = true;

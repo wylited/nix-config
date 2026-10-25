@@ -2,6 +2,9 @@
   description = "Wylited's homelab config — fleet: warden, scout-darwin, scout-asahi, rogue-glyph, artificer (plan: ./../PLAN.md)";
 
   inputs = {
+    # rolling unstable, locked on first eval — lets warden track the latest
+    # immich without rebasing the whole fleet (services.immich.package)
+    nixpkgs-immich.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     nix-darwin = {

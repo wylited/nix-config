@@ -28,8 +28,13 @@
   wyli.ingress.routes = {
     "immich.wyli.tech" = 2283;
     "stt.wyli.tech" = 8000;
-    # "matrix.wyli.tech" = 8008; # plan 10
+    "matrix.wyli.tech" = 8008;   # synapse — plain http, tailnet-only (2026-10-26)
   };
+
+  # latest immich from the rolling input (fleet nixpkgs pin ships 3.0.3;
+  # fresh instance = zero migration risk) — 2026-10-26
+  services.immich.package =
+    inputs.nixpkgs-immich.legacyPackages.x86_64-linux.immich;
 
   # ================= boot / basics =================
   boot.loader.systemd-boot.enable = true;          # matches current Arch bootloader
