@@ -22,7 +22,7 @@
     package = config.boot.kernelPackages.nvidiaPackages.stable;  # Ampere
     modesetting.enable = false;        # compute only — no display on the dGPU
     nvidiaSettings = false;
-    open = true;                       # open kernel modules, Turing+ (560+)
+    open = false;                      # GA107 mobile: open module GSP-RPC timeouts (verified on-box 2026-10-25); closed module works
     powerManagement.enable = true;
     powerManagement.finegrained = true;  # RTD3 (~0 W idle, wakes on demand)
     # module assertion: finegrained ⇒ offload — headless, but the plumbing
