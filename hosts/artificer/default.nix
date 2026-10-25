@@ -32,6 +32,7 @@
     ../../modules/dns.nix       # plan 12 §1 — AGH tailnet resolver (host MOVED here 2026-10-16)
     ../../modules/caldav.nix    # plan 12 §3 — radicale (host MOVED here 2026-10-16)
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
+    ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
   ];
 
   # TLS = tailscale cert (path B, 2026-10-16): real LE cert for
@@ -112,7 +113,8 @@
 
   services.openssh = {
     enable = true;
-    settings.PasswordAuthentication = false;
+    # baseline (PasswordAuthentication/KbdInteractiveAuthentication false,
+    # PermitRootLogin prohibit-password) lives in modules/hardening.nix
   };
 
   # key baked in — this is the ONLY way in on first boot (no display, no password)

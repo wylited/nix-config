@@ -21,6 +21,7 @@
     ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
     ../../modules/ai.nix       # pi agent + aichat (MCP-first, empty profiles) — 2026-10-26
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
+    ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
   ];
 
   # dns.nix + caldav.nix MOVED to artificer (2026-10-16, user decision — small
@@ -94,7 +95,8 @@
 
   services.openssh = {
     enable = true;
-    settings.PasswordAuthentication = false;
+    # baseline (PasswordAuthentication/KbdInteractiveAuthentication false,
+    # PermitRootLogin prohibit-password) lives in modules/hardening.nix
     # host keys copied from Arch /etc/ssh/ssh_host_* at install to keep identity
   };
   # headless bring-up parity with artificer: no password exists at first boot,
