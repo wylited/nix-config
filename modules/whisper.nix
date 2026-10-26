@@ -40,11 +40,10 @@
   # card and cascade start-limit kills into every dependent unit.
   hardware.nvidia-container-toolkit.enable = false;
 
-  # ---------------- speaches ----------------
   virtualisation.oci-containers.containers.speaches = {
     image = "ghcr.io/speaches-ai/speaches:latest-cuda";
     autoStart = true;
-    ports = [ "127.0.0.1:8000:8000" ];
+    ports = [ "8000:8000" ];   # all interfaces — the firewall line below is the gate (was loopback-only: tailnet clients got conn-refused)
     environment = {
       # verified against the image's config.py (2026-10-25): pydantic-settings
       # with env_nested_delimiter="__" and NO prefix — WHISPER__FIELD, not
@@ -91,4 +90,5 @@
 
   # tailnet-only reachability for speaches (no caddy on this host)
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 8000 ];
+  networking.firewall.interfaces."end0".allowedTCPPorts = [ 8000 ];  # LAN-direct, same pattern as immich
 }
