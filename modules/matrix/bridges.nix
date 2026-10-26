@@ -328,6 +328,11 @@ in
         if [ ! -f "$registration" ]; then
           mautrix-whatsapp --generate-registration --config="$config" --registration="$registration"
         fi
+        # MSC3202 lets the appservice manage per-ghost to-device crypto —
+        # without it ghost messages are encrypted with the BOT's device and
+        # clients reject them ("sender does not match device owner", 2026-10-27).
+        grep -q 'de.sorunome.msc3202' "$registration" \
+          || printf 'de.sorunome.msc3202: true\n' >> "$registration"
         chmod 0640 "$registration"
       '';
     };
@@ -398,6 +403,9 @@ in
         cp "$config" "$config.tmp"
         mautrix-instagram --generate-registration --config="$config.tmp" --registration="$registration"
         rm -f "$config.tmp"
+        # per-ghost crypto devices (MSC3202) — see whatsapp note above
+        grep -q 'de.sorunome.msc3202' "$registration" \
+          || printf 'de.sorunome.msc3202: true\n' >> "$registration"
 
         if [ "$config_has_tokens" = false ] && [ "$registration_exists" = false ]; then
           yq -sY '.[0].appservice.as_token = .[1].as_token | .[0].appservice.hs_token = .[1].hs_token | .[0]' \
