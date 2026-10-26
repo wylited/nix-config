@@ -1,6 +1,6 @@
 --- a/dist/transports/matrix.js
 +++ b/dist/transports/matrix.js
-@@ -299,6 +299,46 @@
+@@ -299,6 +299,48 @@
              // Ignore typing indicator errors
          }
      }
