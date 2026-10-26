@@ -14,7 +14,7 @@
     # WireGuard encrypts the transport; no tailscale-serve, no tokens
     # (2026-10-26 decision). Changed BEFORE the first account existed.
     serverName = "matrix.wyli.tech";
-    clientUrl = "http://matrix.wyli.tech";
+    clientUrl = "https://matrix.ts.wyli.tech";   # LE wildcard via deSEC (2026-10-27); identity stays @user:matrix.wyli.tech
 
     owner = "wyli";
 
