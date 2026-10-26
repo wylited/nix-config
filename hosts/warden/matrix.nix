@@ -25,22 +25,61 @@
 
       # Per-bridge tweaks go here; anything not set keeps the stack defaults
       # (loopback listener, postgres, E2EE-with-pickle-key, owner=admin).
-      # Full history backfill (Beeper-parity UX, 2026-10-27): whatsmeow's
-      # native WhatsApp history-sync does the import; throttled by design so
-      # first sync takes a while on big histories. `sync` in the bot DM pulls
-      # a specific chat immediately.
-      whatsapp.settings.bridge = {
-        history_sync = {
-          full_sync = true;
-          create_portals = true;
-          max_conversations = 200;
-          recent_hours = 168;    # prioritize the last week of chats
+      # v26.07 bridgev2 shape (2026-10-27, verified vs mautrix/whatsapp
+      # v0.2607.0 + mautrix-go v0.29.0 example configs): history_sync lives
+      # under `network`, backfill/matrix are TOP-LEVEL. The previous
+      # bridge.backfill/history_sync block was dead keys (silently dropped).
+      # After deploy: re-login (!wa logout / !wa login) — WhatsApp's initial
+      # history-sync blob can't be re-requested any other way.
+      whatsapp.settings = {
+        network = {
+          history_sync = {
+            request_full_sync = true;            # 3-month → 1-year blob
+            full_sync_config.days_limit = 1095;  # ~3y documented cap
+            max_initial_conversations = -1;      # portal for every chat
+          };
+          force_active_delivery_receipts = true; # contacts see 2 ticks, no faked presence
+          use_whatsapp_retry_store = true;
         };
         backfill = {
-          enable = true;
-          max_initial_events = 500;
+          enabled = true;
+          max_initial_messages = 100000;         # default 50 would cap the import
+        };
+        matrix = {
+          message_status_events = true;
+          delivery_receipts = true;
+          federate_rooms = false;
+        };
+      };
+      # bridgev2 backfill fires on LOGIN; IG has no logins yet — deploy this
+      # before the first `login` (cookie flow at v26.07: `login instagram`).
+      instagram.settings = {
+        backfill = {
+          enabled = true;
+          max_initial_messages = 500;
           unread_hours_threshold = 720;
         };
+        network.thread_backfill.batch_count = 1000;  # full inbox walk; NOT -1 (loop bug at v0.2607.0)
+        matrix = {
+          message_status_events = true;
+          delivery_receipts = true;
+          federate_rooms = false;
+        };
+      };
+      # legacy v0.7.6 bridge (user-account puppeting; no webhook path exists).
+      # missed -1 = catch up everything after bridge downtime.
+      discord.settings.bridge = {
+        backfill = {
+          forward_limits.initial = { dm = 100; channel = 50; thread = 50; };
+          forward_limits.missed = { dm = -1; channel = -1; thread = -1; };
+          max_guild_members = -1;
+        };
+        delivery_receipts = true;
+        message_status_events = true;
+        sync_direct_chat_list = true;
+        delete_portal_on_channel_delete = true;
+        federate_rooms = false;
+        startup_private_channel_create_limit = 20;
       };
     };
 
