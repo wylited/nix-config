@@ -112,6 +112,16 @@ let
       npm run build
       runHook postBuild
     '';
+    # `/new <title>` — trusted users can spawn a fresh session room from the
+    # main DM (bot creates it, invites them, replies with a matrix.to
+    # permalink; PI_MATRIX_BRIDGE_SPACE_ID additionally nests the room in a
+    # space). Patched onto the tsc OUTPUT, not the TS sources: it's anchored
+    # to the dist files this exact pinned rev deterministically compiles, and
+    # keeps upstream's tree untouched for clean version bumps. Rebase the
+    # patch when rev/npmDepsHash move.
+    postBuild = ''
+      ${pkgs.patch}/bin/patch -p1 < ${./patches/pi-matrix-bridge-new-room.patch}
+    '';
 
     installPhase = ''
       runHook preInstall
@@ -368,6 +378,10 @@ in
         PI_CODING_AGENT_DIR = stateDir;
         PI_MATRIX_BRIDGE_AUTO_CONNECT = "1";
         PI_MATRIX_BRIDGE_HOMESERVER = cfg.homeserverUrl;
+        # `/new <title>` rooms become children of this space (empty = off).
+        # Override at the host level with the pi space's room id once it
+        # exists; the bot needs state-event power in the space.
+        PI_MATRIX_BRIDGE_SPACE_ID = lib.mkDefault "";
       };
       # pi's bash tool spawns whatever is on PATH — the systemd default PATH
       # has no bash/git, so every tool call failed and the model computed
