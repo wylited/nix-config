@@ -2,7 +2,7 @@
 # Throwaway: every shell script the warden matrix stack renders must parse.
 set -uo pipefail
 cd "$(dirname "$0")"
-units=(matrix-healthcheck matrix-secrets matrix-tailscale-serve nixos-upgrade
+units=(ai-matrix-bridge-setup ai-matrix-bridge matrix-healthcheck matrix-secrets matrix-tailscale-serve nixos-upgrade
        mautrix-whatsapp-registration mautrix-instagram-registration
        mautrix-discord-registration restic-backups-matrix postgresqlBackup-matrix-synapse)
 fail=0
