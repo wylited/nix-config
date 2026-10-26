@@ -15,8 +15,26 @@
 # offline in the tailnet as of 2026-10-16 — fix when warden rejoins).
 # mutableSettings=true means the UI owns /var/lib/adguardhome/AdGuardHome.yaml
 # after first boot — edits here only apply on a fresh state dir.
-{ config, lib, pkgs, ... }:
 {
+  # Quad-100 fallback guard (2026-10-26). tailscaled captures the host's
+  # resolver config at startup as its DNS fallback, and after long uptime the
+  # captured copy had gone stale once (resolv.conf left pointing at a
+  # resolver that no longer answered) — taking host lookup with it. Pin the
+  # capture deterministically instead of trusting whatever DHCP handed over:
+  #
+  # 127.0.0.1, not the router: AGH binds 0.0.0.0:53 (loopback included) and
+  # serves both the wyli.tech rewrites and external names (upstream DoH,
+  # bootstrapped by IP), so the host resolves without the router — and the
+  # loopback reference survives network changes that would invalidate a
+  # router IP. No loop: this points at AGH's local listener, not at
+  # 100.100.100.100; a DNS cycle would need AGH forwarding to quad-100,
+  # and its upstreams are public DoH resolvers. Even when MagicDNS rewrites
+  # resolv.conf to quad-100, tailscaled's split-DNS wyli.tech queries
+  # terminate back in AGH, which answers rewrites locally without
+  # recursing. DHCP servers stay in resolv.conf as secondaries, so early
+  # boot (AGH not yet listening) still resolves via the router.
+  networking.nameservers = [ "127.0.0.1" ];
+
   services.adguardhome = {
     enable = true;
     port = 3000;                    # admin UI — dns.wyli.tech via caddy (ingress.nix)
