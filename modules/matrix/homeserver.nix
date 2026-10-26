@@ -28,8 +28,8 @@ let
     version = "1.0";
     format = "other";
     src = pkgs.fetchurl {
-      url = "https://raw.githubusercontent.com/devture/matrix-synapse-shared-secret-auth/086a51eb7306a2637375b6f247f8db9c69ec0318/shared_secret_authenticator.py";
-      sha256 = "sha256-1VWM1BnI1GvclYBky5f5Y9HqeThmQUwCWQbsFQM1Eu0=";
+      url = "https://raw.githubusercontent.com/devture/matrix-synapse-shared-secret-auth/6e959f3073d9a3d6a4bc65215f186d3b519dec84/shared_secret_authenticator.py";
+      sha256 = "sha256-967ePQIf9T41yMTjr3BlhwxC8PQHg8p7yCDUnfLnox0=";
     };
     dontBuild = true;
     installPhase = ''
