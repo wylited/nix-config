@@ -70,6 +70,25 @@
     "d /var/lib/speaches 0700 root root -"
   ];
 
+  # speaches drops its installed-model registry on every container restart
+  # (HF cache survives; the install does not). Re-register large-v3 per start —
+  # cache hit, so seconds not a download.
+  systemd.services.speaches-preload = {
+    description = "register whisper large-v3 in speaches (cached)";
+    after = [ "podman-speaches.service" ];
+    partOf = [ "podman-speaches.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.Type = "oneshot";
+    serviceConfig.ExecStart = toString (pkgs.writeShellScript "speaches-preload" ''
+      for i in $(seq 1 60); do
+        curl -sf -m 4 http://127.0.0.1:8000/health >/dev/null 2>&1 && break
+        sleep 5
+      done
+      exec curl -sf -X POST -m 600 \
+        http://127.0.0.1:8000/v1/models/Systran%2Ffaster-whisper-large-v3
+    '');
+  };
+
   # tailnet-only reachability for speaches (no caddy on this host)
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 8000 ];
 }
