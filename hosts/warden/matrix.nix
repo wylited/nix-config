@@ -25,7 +25,23 @@
 
       # Per-bridge tweaks go here; anything not set keeps the stack defaults
       # (loopback listener, postgres, E2EE-with-pickle-key, owner=admin).
-      # whatsapp.settings.bridge.private_chat_portal_meta = true;
+      # Full history backfill (Beeper-parity UX, 2026-10-27): whatsmeow's
+      # native WhatsApp history-sync does the import; throttled by design so
+      # first sync takes a while on big histories. `sync` in the bot DM pulls
+      # a specific chat immediately.
+      whatsapp.settings.bridge = {
+        history_sync = {
+          full_sync = true;
+          create_portals = true;
+          max_conversations = 200;
+          recent_hours = 168;    # prioritize the last week of chats
+        };
+        backfill = {
+          enable = true;
+          max_initial_events = 500;
+          unread_hours_threshold = 720;
+        };
+      };
     };
 
     watchdog = {

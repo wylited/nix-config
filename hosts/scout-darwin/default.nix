@@ -72,7 +72,12 @@ in
     yaak
     dust
     tenv
-    emacs
+    # Emacs binaries only — suppress the GUI app symlink so Spotlight resolves
+    # "Emacs" to the ~/Applications client wrapper (attaches to the daemon).
+    (pkgs.runCommand "emacs-bin" { } ''
+      mkdir -p $out/bin
+      ln -s ${pkgs.emacs}/bin/* $out/bin
+    '')
     qbittorrent
     libtinfo
     esptool
