@@ -18,6 +18,10 @@ let
   matrixUrl = "http://${cfg.listenAddress}:${toString cfg.listenPort}";
   resticRepo = cfg.backup.repository;
   resticPasswordFile = "${cfg.secrets.directory}/restic-password";
+  # Fixed identity for the alert bot: the registration unit, the join timer
+  # and the operator bring-up docs all name the same user.
+  alertBotLocalpart = "matrix-alert";
+  alertBotUserId = "@${alertBotLocalpart}:${cfg.serverName}";
 
   # Units that must be running, plus one HTTP probe per enabled bridge.
   requiredUnits = [ "postgresql.service" "matrix-synapse.service" ]
@@ -233,6 +237,102 @@ in
         OnUnitActiveSec = cfg.watchdog.interval;
         # No `Persistent`: that only applies to wall-clock (OnCalendar) timers,
         # and a monotonic timer already resumes counting after suspend.
+      };
+    };
+
+    # --- alert delivery wiring (active once watchdog.alertRoom is set) -----
+    # Two-step bring-up; the operator only does step 2:
+    #   1. deploy: matrix-alert-bot registers @matrix-alert:<serverName> with
+    #      a generated password (kept beside the other stack secrets) and
+    #      mints the access token the healthcheck posts alerts with.
+    #   2. create a private alert room, invite @matrix-alert:<serverName> —
+    #      the join timer below accepts the invite — then put the real room
+    #      id into `watchdog.alertRoom`.
+    systemd.services.matrix-alert-bot = lib.mkIf (cfg.watchdog.alertRoom != null) {
+      description = "Register the Matrix alert bot and mint its access token";
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "matrix-synapse.service" ];
+      after = [ "matrix-synapse.service" ];
+      # Bootstrap oneshot: a cold-starting Synapse can take minutes before it
+      # accepts registrations, so retry indefinitely 30s apart.
+      unitConfig.StartLimitIntervalSec = 0;
+      # Same activation rule as matrix-healthcheck above: never part of a
+      # switch transaction, where a mid-restart Synapse would fail this unit
+      # and the switch with it. Reruns are moot anyway — account and token
+      # persist under the secrets directory.
+      restartIfChanged = false;
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = "30s";
+        UMask = "0077";
+      };
+      script = ''
+        set -eu
+        d=${cfg.secrets.directory}
+        pwfile="$d/alert-bot-password"
+        tokenfile=${cfg.watchdog.alertTokenFile}
+        if [ ! -s "$pwfile" ]; then
+          ${pkgs.openssl}/bin/openssl rand -hex 32 > "$pwfile"
+        fi
+        pw=$(cat "$pwfile")
+        # Reruns against an existing account fail with "user already exists";
+        # the login below is the actual gate, so the failure is tolerated.
+        # The wrapper is installed by the synapse module and already carries
+        # both -c configs (registration shared secret included) and the
+        # server URL.
+        matrix-synapse-register_new_matrix_user -u ${alertBotLocalpart} -p "$pw" || true
+        token=$(${lib.getExe pkgs.curl} -fsS --max-time 30 -X POST \
+          -H 'Content-Type: application/json' \
+          -d "{\"type\":\"m.login.password\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\"${alertBotLocalpart}\"},\"password\":\"$pw\"}" \
+          '${matrixUrl}/_matrix/client/v3/login' \
+          | ${lib.getExe pkgs.jq} -r '.access_token // empty')
+        if [ -z "$token" ]; then
+          echo "matrix-alert-bot: login failed, no token minted" >&2
+          exit 1
+        fi
+        printf '%s' "$token" > "$tokenfile"
+        echo "matrix-alert-bot: ${alertBotUserId} token written to $tokenfile"
+      '';
+    };
+
+    # The bot can only post from inside the room, and the invite arrives
+    # after deploy (step 2 above) — so join from a timer, idempotently, and
+    # never from the activation transaction (see matrix-healthcheck). A join
+    # of an already-joined room is a 200, so there is no state to guard.
+    systemd.services.matrix-alert-join = lib.mkIf (cfg.watchdog.alertRoom != null) {
+      description = "Join the Matrix alert bot into its alert room";
+      restartIfChanged = false;
+      serviceConfig = {
+        Type = "oneshot";
+        UMask = "0077";
+      };
+      script = ''
+        tokenfile=${cfg.watchdog.alertTokenFile}
+        if [ ! -s "$tokenfile" ]; then
+          echo "matrix-alert-join: no token yet — matrix-alert-bot has not succeeded"
+          exit 0
+        fi
+        encoded_room=$(printf '%s' '${cfg.watchdog.alertRoom}' | ${lib.getExe' pkgs.gnused "sed"} -e 's/!/%21/g' -e 's/:/%3A/g')
+        if ${lib.getExe pkgs.curl} -fsS --max-time 10 -X POST \
+             -H "Authorization: Bearer $(cat "$tokenfile")" \
+             '${matrixUrl}/_matrix/client/v3/join/'"$encoded_room"; then
+          echo "matrix-alert-join: ${alertBotUserId} is in the alert room"
+        else
+          echo "matrix-alert-join: no room yet (invite posted?) — retrying next tick"
+        fi
+        exit 0
+      '';
+    };
+
+    systemd.timers.matrix-alert-join = lib.mkIf (cfg.watchdog.alertRoom != null) {
+      description = "Retry the Matrix alert bot room join";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        Unit = "matrix-alert-join.service";
+        OnBootSec = "5min";
+        OnUnitActiveSec = "15min";
       };
     };
   };

@@ -30,10 +30,19 @@
     };
 
     watchdog = {
-      # Set both of these to get degraded-state alerts inside Matrix itself
-      # (create a room, grab its id, then store an access token in
-      # /var/lib/matrix-secrets/alert-token). Journal-only until then.
-      alertRoom = null;
+      # Wired 2026-10-26 — two-step bring-up (units live in watchdog.nix):
+      #   1. this deploy: matrix-alert-bot.service registers
+      #      @matrix-alert:matrix.wyli.tech (random password + access token
+      #      under /var/lib/matrix-secrets/); matrix-alert-join.timer waits
+      #      for the invite.
+      #   2. wyli creates a private alert room and invites
+      #      @matrix-alert:matrix.wyli.tech (joined within 15 min), then the
+      #      placeholder below is replaced with the real room id
+      #      (!…:matrix.wyli.tech) and the switch lands. Until then a
+      #      degraded tick reports alert-delivery failures on top of the real
+      #      problems — best-effort by design, nothing is swallowed.
+      # Token file is the option default: /var/lib/matrix-secrets/alert-token.
+      alertRoom = "!set-by-parent-after-room-creation:matrix.wyli.tech";
     };
 
     # plain-http caddy ingress instead (matrix.wyli.tech → :80 → synapse);
