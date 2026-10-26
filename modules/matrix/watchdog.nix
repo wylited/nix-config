@@ -287,7 +287,7 @@ in
         # The wrapper is installed by the synapse module and already carries
         # both -c configs (registration shared secret included) and the
         # server URL.
-        matrix-synapse-register_new_matrix_user -u ${alertBotLocalpart} -p "$pw" || true
+        matrix-synapse-register_new_matrix_user -u ${alertBotLocalpart} -p "$pw" -a no || true
         token=$(${lib.getExe pkgs.curl} -fsS --max-time 30 -X POST \
           -H 'Content-Type: application/json' \
           -d "{\"type\":\"m.login.password\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\"${alertBotLocalpart}\"},\"password\":\"$pw\"}" \
