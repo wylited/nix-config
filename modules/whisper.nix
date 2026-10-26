@@ -52,8 +52,7 @@
       # CPU since 2026-10-26: the 3050 is hardware-dead (reset-required survives
       # battery-disconnect drain; Xid 119 GSP timeouts at every init). ~realtime
       # on the 5800H for large-v3. Flip back to cuda if the card is ever revived.
-      WHISPER__INFERENCE_DEVICE = "cpu";
-      WHISPER__COMPUTE_TYPE = "int8_float16";
+      WHISPER__COMPUTE_TYPE = "int8";   # int8_float16 needs GPU; int8 = CPU (CT2 ValueError otherwise)
       WHISPER__TTL = "-1";
       # (GPU env removed with the dead card — CPU-only container now)
     };
