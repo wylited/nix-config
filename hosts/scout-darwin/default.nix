@@ -126,6 +126,10 @@ in
     # Stop App Nap from throttling Emacs between keystrokes (input lag on macOS)
     CustomUserPreferences."org.gnu.Emacs" = {
       NSAppSleepDisabled = true;
+      # macOS 26 event-loop fixes: trackpad scroll lag / delayed frames
+      # (Emacs bug#80268)
+      NSApplicationUpdateCycleEnabled = false;
+      NSEventConcurrentProcessingEnabled = false;
     };
   };
 
