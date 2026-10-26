@@ -17,6 +17,7 @@
     ../../modules/lab-cache.nix # makerspace attic cache (pull + push)
     ../../modules/ingress.nix   # plan 12 §0 — caddy + *.wyli.tech wildcard (no-ops without CF token)
     ../../modules/immich.nix    # plan 12 §2 — native immich, fresh library
+    ../../modules/immich-backup.nix # DRAFT off — library+pgdump restic to the pi; card too small, see header
     ../../modules/whisper.nix   # plan 12 §8 — GPU Mode B + speaches
     ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
     ../../modules/ai.nix       # pi agent + aichat (MCP-first, empty profiles) — 2026-10-26
