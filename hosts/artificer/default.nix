@@ -81,6 +81,20 @@
     wantedBy = [ "timers.target" ];
   };
 
+  # ============ backup target for warden (immich library + pg dump) =========
+  # warden's nightly restic lands here via sftp over the tailnet — see
+  # modules/immich-backup.nix (DRAFT, enable still off there; this dir + rule
+  # are harmless to deploy ahead of it). NOTE: the 58 GB card WILL be outgrown
+  # once the Takeout import lands — treat this as a stopgap target only.
+  systemd.tmpfiles.rules = [
+    "d /srv/backups/immich 0700 wyli wyli -"
+  ];
+  # TODO (with step 3 of immich-backup.nix's bring-up list): append warden's
+  # key to users.users.wyli.openssh.authorizedKeys.keys, restricted to sftp:
+  #   "restrict ssh-ed25519 <contents of warden's /etc/nix/immich-backup_ed25519.pub> immich-backup@warden"
+  # (`restrict` still allows the sftp subsystem; it only disables the exec
+  # half of that module's size guard, which degrades to a logged NOTE.)
+
   # ================= resilience (SD card is the only disk) ===================
   # Journal cap: 64 MiB today, but nothing stopped growth and the SD card is
   # also /. Hard ceiling + retention so a chatty unit can't fill the card.
