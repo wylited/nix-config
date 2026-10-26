@@ -33,8 +33,12 @@
       nvidiaBusId = "PCI:1:0:0";
     };
   };
-  # container GPU access (speaches + immich-ml run as CUDA containers)
-  hardware.nvidia-container-toolkit.enable = true;
+  # dGPU RETIRED 2026-10-26: RTX 3050 hardware-dead (Xid 119 GSP timeouts,
+  # reset-required survives battery-disconnect drain). hardware.nvidia stays
+  # so a replacement card revives without config archaeology, but no container
+  # gets GPU plumbing — the CDI generator would fail forever against a dead
+  # card and cascade start-limit kills into every dependent unit.
+  hardware.nvidia-container-toolkit.enable = false;
 
   # ---------------- speaches ----------------
   virtualisation.oci-containers.containers.speaches = {
@@ -51,16 +55,13 @@
       WHISPER__INFERENCE_DEVICE = "cpu";
       WHISPER__COMPUTE_TYPE = "int8_float16";
       WHISPER__TTL = "-1";
-      NVIDIA_VISIBLE_DEVICES = "all";
-      NVIDIA_DRIVER_CAPABILITIES = "compute,utility";
+      # (GPU env removed with the dead card — CPU-only container now)
     };
     volumes = [
       "/var/lib/speaches:/root/.cache/huggingface"   # model cache survives pulls
     ];
 
-
     extraOptions = [
-      "--device=nvidia.com/gpu=all"  # CDI — podman has no "nvidia" OCI runtime (2026-10-25)
       "--memory=3g"      # PLAN §11
     ];
   };
