@@ -363,8 +363,11 @@ in
     systemd.services.ai-matrix-bridge = {
       description = "pi coding agent, bridged to Matrix DMs";
       wantedBy = [ "multi-user.target" ];
-      wants = [ "network-online.target" "ai-matrix-bridge-setup.service" ];
-      after = [ "network-online.target" "ai-matrix-bridge-setup.service" ];
+      # synapse ordering is load-bearing: without it a joint restart races —
+      # the transport's first connect hits a still-down synapse (ECONNREFUSED)
+      # and the extension never retries, leaving the bot deaf until bounced.
+      wants = [ "network-online.target" "ai-matrix-bridge-setup.service" "matrix-synapse.service" ];
+      after = [ "network-online.target" "ai-matrix-bridge-setup.service" "matrix-synapse.service" ];
       restartTriggers = [
         bridgeExtension
         settingsJson
