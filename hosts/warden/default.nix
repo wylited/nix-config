@@ -21,6 +21,7 @@
     ../../modules/whisper.nix   # plan 12 §8 — GPU Mode B + speaches
     ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
     ../../modules/ai.nix       # pi agent + aichat (MCP-first, empty profiles) — 2026-10-26
+    ../../modules/ai-matrix-bridge.nix # pi agent over Matrix DMs — always-on bot @pi:matrix.wyli.tech (2026-10-26)
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     ../../modules/secrets.nix   # sops-nix base (plan 03): age key gen only, zero secrets yet — see PLAN §14
