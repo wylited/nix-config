@@ -2,7 +2,7 @@
 #
 # STATE (2026-10-26): infrastructure only, ZERO secrets migrated. Every host
 # still reads its ad-hoc files — warden: /etc/nix/{warden-passwd,
-# attic-token.txt, ai-env, acme-cf-token}, artificer: /etc/nix/radicale-htpasswd;
+# attic-token.txt, ai-env, acme-desec-env}, artificer: /etc/nix/radicale-htpasswd;
 # /var/lib/matrix-secrets/* on warden stays host-side by decision (PLAN §0 /
 # plan 10 §5.4: host-originated must-stay-stable values never leave the box).
 # sops.defaultSopsFile stays null: with no sops.secrets defined, sops-nix
