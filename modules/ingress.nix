@@ -56,14 +56,15 @@ in
           plain = lib.mapAttrs
             (n: p: { extraConfig = "reverse_proxy 127.0.0.1:${toString p}"; })
             (lib.mapAttrs' (n: p: lib.nameValuePair "http://${n}" p) routesCfg);
-          tls = lib.mapAttrs
-            (n: p: {
+          tls = lib.mapAttrs'
+            (n: p: lib.nameValuePair (tsName n) {
               useACMEHost = lib.mkIf hasDesecToken "ts.wyli.tech";
               extraConfig = "reverse_proxy 127.0.0.1:${toString p}";
             })
-            (lib.genAttrs (builtins.attrNames routesCfg) tsName);
+            routesCfg;
           tlsSites = if hasDesecToken
-            then lib.mapAttrs' (n: v: lib.nameValuePair "https://${n}" v) tls
+            then lib.mapAttrs'
+              (n: v: lib.nameValuePair "https://${n}" v) tls
             else { };
         in
         plain // tlsSites;
