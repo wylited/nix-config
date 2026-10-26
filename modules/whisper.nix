@@ -45,8 +45,10 @@
       # verified against the image's config.py (2026-10-25): pydantic-settings
       # with env_nested_delimiter="__" and NO prefix — WHISPER__FIELD, not
       # SPEACHES__WHISPER__FIELD. No model field exists anymore: models load
-      # per-request into a TTL cache (ttl -1 = keep loaded; dedicated GPU box).
-      WHISPER__INFERENCE_DEVICE = "cuda";
+      # CPU since 2026-10-26: the 3050 is hardware-dead (reset-required survives
+      # battery-disconnect drain; Xid 119 GSP timeouts at every init). ~realtime
+      # on the 5800H for large-v3. Flip back to cuda if the card is ever revived.
+      WHISPER__INFERENCE_DEVICE = "cpu";
       WHISPER__COMPUTE_TYPE = "int8_float16";
       WHISPER__TTL = "-1";
       NVIDIA_VISIBLE_DEVICES = "all";
