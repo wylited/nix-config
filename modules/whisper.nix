@@ -80,11 +80,12 @@
     wantedBy = [ "multi-user.target" ];
     serviceConfig.Type = "oneshot";
     serviceConfig.ExecStart = toString (pkgs.writeShellScript "speaches-preload" ''
+      CURL=${pkgs.curl}/bin/curl
       for i in $(seq 1 60); do
-        curl -sf -m 4 http://127.0.0.1:8000/health >/dev/null 2>&1 && break
+        $CURL -sf -m 4 http://127.0.0.1:8000/health >/dev/null 2>&1 && break
         sleep 5
       done
-      exec curl -sf -X POST -m 600 \
+      exec $CURL -sf -X POST -m 600 \
         http://127.0.0.1:8000/v1/models/Systran%2Ffaster-whisper-large-v3
     '');
   };
