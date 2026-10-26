@@ -51,6 +51,10 @@
           federate_rooms = false;
         };
       };
+      # automatic double puppeting: edits/deletes/receipts happen AS the
+      # user's account (bot-relay days over) — secret from matrix-secrets.
+      whatsapp.settings.double_puppet.secrets."matrix.wyli.tech" = "$MAUTRIX_WHATSAPP_LOGIN_SHARED_SECRET";
+      instagram.settings.double_puppet.secrets."matrix.wyli.tech" = "$MAUTRIX_INSTAGRAM_LOGIN_SHARED_SECRET";
       # bridgev2 backfill fires on LOGIN; IG has no logins yet — deploy this
       # before the first `login` (cookie flow at v26.07: `login instagram`).
       instagram.settings = {

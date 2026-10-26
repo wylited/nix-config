@@ -342,7 +342,12 @@ in
     # to pin, so there is nothing to substitute and nothing to generate.
     services.mautrix-discord = lib.mkIf bridges.discord.enable {
       enable = true;
-      settings = bridgeSettings.discord;
+      # double-puppeting secret (matrix-secrets.service) — envsubst target
+      environmentFile = "/var/lib/matrix-secrets/mautrix-discord.env";
+      settings = lib.mkMerge [
+        bridgeSettings.discord
+        { bridge.login_shared_secret_map."matrix.wyli.tech" = "$MAUTRIX_DISCORD_LOGIN_SHARED_SECRET"; }
+      ];
     };
 
     # ---------------- Instagram ---------------
