@@ -104,8 +104,8 @@ in
         puppet_env() {
           name="$1"; prefix="$2"
           [ -f "$d/$name.env" ] || return 0
-          grep -q "${prefix}_LOGIN_SHARED_SECRET" "$d/$name.env" && return 0
-          printf '%s_LOGIN_SHARED_SECRET=%s\n' "${prefix}" "$puppet_secret" >> "$d/$name.env"
+          grep -q "''${prefix}_LOGIN_SHARED_SECRET" "$d/$name.env" && return 0
+          printf '%s_LOGIN_SHARED_SECRET=%s\n' "''${prefix}" "$puppet_secret" >> "$d/$name.env"
           chmod 0600 "$d/$name.env"
         }
         ${lib.optionalString bridges.whatsapp.enable ''puppet_env mautrix-whatsapp MAUTRIX_WHATSAPP''}
