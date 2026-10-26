@@ -209,7 +209,7 @@ let
     # Reruns against an existing account fail with "user already exists";
     # the login below is the actual gate, so tolerate it (watchdog idiom —
     # the wrapper carries the shared-secret config and the server URL).
-    matrix-synapse-register_new_matrix_user -u ${cfg.botLocalpart} -p "$pw" || true
+    matrix-synapse-register_new_matrix_user -u ${cfg.botLocalpart} -p "$pw" -a || true
 
     echo "minting dedicated access token (device pi-matrix-bridge)"
     body=$(${lib.getExe pkgs.jq} -nc --arg u ${cfg.botLocalpart} --arg p "$pw" \
@@ -318,7 +318,12 @@ in
         RestartSec = "30s";
         UMask = "0077";
       };
-      script = lib.getExe' setupScript "ai-matrix-bridge-setup";
+      # writeShellScript yields a file at the store root — getExe' would build
+      # <path>/bin/<name> and die with "Not a directory".
+      script = toString setupScript;
+      # synapse registration wrapper + bare -a flag (synapse 1.156: --no-admin
+      # prompts for admin under systemd and EOFs without it)
+      path = [ "/run/current-system/sw" ];
     };
 
     # --- the bridge -------------------------------------------------------
