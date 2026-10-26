@@ -295,6 +295,10 @@ in
       uid = lib.mkDefault 3005;
       inherit group;
       home = stateDir;
+      # util-linux `script` (the PTY wrapper in ExecStart) spawns the login
+      # shell; nologin makes it die with "This account is currently not
+      # available". No password + key-only sshd = shell is safe here.
+      shell = "${pkgs.bash}/bin/bash";
     };
     # systemd chdirs before ExecStartPre can mkdir — the workspace must
     # pre-exist via tmpfiles or the unit dies with 200/CHDIR on first boot.
