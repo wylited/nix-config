@@ -361,6 +361,10 @@ in
         PI_MATRIX_BRIDGE_AUTO_CONNECT = "1";
         PI_MATRIX_BRIDGE_HOMESERVER = cfg.homeserverUrl;
       };
+      # pi's bash tool spawns whatever is on PATH — the systemd default PATH
+      # has no bash/git, so every tool call failed and the model computed
+      # answers "mentally" (observed live 2026-10-27).
+      path = with pkgs; [ bashInteractive git gnugrep gnused findutils curl jq procps ];
       serviceConfig = {
         Type = "simple";
         User = user;
