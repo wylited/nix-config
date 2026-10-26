@@ -1,0 +1,40 @@
+# Fleet CI: eval-only on every push/PR. Public repo → runners have no ssh
+# keys, no tailscale, no GPU, so we eval what is pure-evaluable:
+#   - artificer-nixos + scout-darwin toplevels (drvPath proof)
+#   - nix flake check --no-build (warden evaluates under pure eval too — its
+#     pathExists guards in hosts/warden/default.nix no-op — but warden's real
+#     config touches live-host paths, so we never build it here; see README CI)
+name: ci
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    name: eval ${{ matrix.host }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: artificer-nixos
+            os: ubuntu-latest
+            attr: nixosConfigurations.artificer-nixos.config.system.build.toplevel
+          - host: scout-darwin
+            os: macos-latest
+            attr: darwinConfigurations.scout-darwin.config.system.build.toplevel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - name: eval toplevel drvPath
+        run: nix eval --raw .#${{ matrix.attr }}.drvPath
+
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - run: nix flake check --no-build
