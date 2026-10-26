@@ -40,7 +40,11 @@ in
         extraDomainNames = [ "*.ts.wyli.tech" ];
         dnsProvider = "desec";
         environmentFile = "/etc/nix/acme-desec-env";
-        dnsPropagationCheck = true;
+        # lego's LOCAL propagation check walks NS via the host resolver, which
+        # returns subzone-NS in AUTHORITY (not ANSWER) → "could not determine
+        # authoritative nameservers" forever. LE validates from its own
+        # recursors, which resolve the delegation fine (verified via DoH).
+        dnsPropagationCheck = false;
         group = "caddy";                   # caddy user reads the pem files
         reloadServices = [ "caddy" ];
       };
