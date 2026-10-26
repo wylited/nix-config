@@ -272,7 +272,7 @@ in
       # registration shared secret + URL) lives in the current system's bin
       # dir; this unit only ever runs against the booted generation
       # (restartIfChanged = false), so /run/current-system is exact.
-      path = [ "/run/current-system/sw/bin" ];
+      path = [ "/run/current-system/sw" ];   # path is package-shaped: /bin,/sbin get appended
       script = ''
         set -eu
         d=${cfg.secrets.directory}
