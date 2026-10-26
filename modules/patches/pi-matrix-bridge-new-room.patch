@@ -1,0 +1,77 @@
+--- a/dist/transports/matrix.js
++++ b/dist/transports/matrix.js
+@@ -299,6 +299,46 @@
+             // Ignore typing indicator errors
+         }
+     }
++    /**
++     * `/new <title>` — create a fresh private room named <title> for a new
++     * session and invite the requester (the bot is the creator, so it is in
++     * the room from the start; `chatId` = roomId means the bridge answers
++     * there the moment the user writes). When PI_MATRIX_BRIDGE_SPACE_ID is
++     * set, the room is also added as a child of that space so sessions group
++     * under one "pi" space. The reply — with a matrix.to permalink — goes to
++     * the SOURCE room.
++     */
++    async handleNewRoom(sourceRoomId, requesterUserId, title) {
++        try {
++            const name = title || `pi session ${new Date().toISOString().slice(0, 10)}`;
++            const { room_id: newRoomId } = await this.client.createRoom({
++                name,
++                preset: "trusted_private_chat",
++                visibility: "private",
++                invite: [requesterUserId],
++            });
++            let suffix = "";
++            const spaceId = (process.env.PI_MATRIX_BRIDGE_SPACE_ID || "").trim();
++            if (spaceId) {
++                try {
++                    // m.space.child lives in the space, keyed by the child room.
++                    const via = this.botUserId.split(":")[1];
++                    await this.client.sendStateEvent(spaceId, "m.space.child", { via: [via] }, newRoomId);
++                    suffix = " (added to the pi space)";
++                }
++                catch (err) {
++                    // Grouping is a bonus — never fail the room over it.
++                    if (this.errorHandler) {
++                        this.errorHandler(new Error(`Failed to add ${newRoomId} to space ${spaceId}: ${err.message}`));
++                    }
++                }
++            }
++            await this.sendMessage(sourceRoomId, `🆕 Session room "${name}": https://matrix.to/#/${newRoomId}${suffix}`);
++        }
++        catch (err) {
++            await this.sendMessage(sourceRoomId, `❌ /new failed: ${err.message}`).catch(() => { });
++        }
++    }
+     onMessage(handler) {
+         this.messageHandler = handler;
+     }
+@@ -338,6 +378,17 @@
+             await this.sendMessage(cId, text);
+         };
+         const isAuthorized = await this.auth.checkAuthorization(userId, chatId, username, isGroupChat, wasMentioned, sendMessageToUser, this.type);
++        // `/new <title>` — trusted users only (in a DM, isAuthorized == in
++        // the trusted set): spawn a fresh session room and keep this room as
++        // the entry point. Handled here rather than in handleAdminCommand
++        // because it needs the Matrix client; accepts the ! prefix like the
++        // other admin commands.
++        const normalizedCmd = messageText.startsWith("!") ? `/${messageText.slice(1)}` : messageText;
++        if (!isGroupChat && isAuthorized && /^\/new(\s|$)/.test(normalizedCmd)) {
++            const title = normalizedCmd.split(/\s+/).slice(1).join(" ").trim();
++            await this.handleNewRoom(chatId, userId, title);
++            return;
++        }
+         // Handle challenge codes and commands in DMs. Admin commands accept either
+         // a / or ! prefix (normalised in handleAdminCommand).
+         if (!isGroupChat && (messageText.startsWith("/") || messageText.startsWith("!") || messageText.match(/^\d{6}$/))) {
+--- a/dist/auth/challenge-auth.js
++++ b/dist/auth/challenge-auth.js
+@@ -333,6 +333,7 @@
+ • \`/togglethinking\` — Toggle live thinking (💭) visibility
+ • \`/session\` — Show current session info (model, context, status)
+ • \`/shutdown\` — Stop pi (restarts into a fresh session under systemd)
++• \`/new <title>\` — Start a fresh session room (bot invites you; the conversation continues there)
+ 
+ *Any authorized user:*
+ • \`stop\` — Interrupt the current turn (also \`/stop\` or \`!stop\`)
