@@ -73,6 +73,19 @@ in
         chgrp matrix-synapse "$d/synapse-secrets.yaml"
         chmod 0640 "$d/synapse-secrets.yaml"
 
+        # Synapse password provider for legacy-bridge double puppeting. Same
+        # secret as the discord bridge's login_shared_secret_map — appended to
+        # the secrets-owned extra config (extraConfigFiles wins over store
+        # config, so the modules list rides here, not in homeserver.nix).
+        if ! grep -q '^modules:' "$d/synapse-secrets.yaml"; then
+          {
+            echo 'modules:'
+            echo '  - module: shared_secret_authenticator.SharedSecretAuthProvider'
+            echo '    config:'
+            printf '      shared_secret: "%s"\n' "$(${lib.getExe' pkgs.yq "yq"} -r '.registration_shared_secret' "$d/synapse-secrets.yaml")"
+            echo '      m_login_password_support_enabled: true'
+          } >> "$d/synapse-secrets.yaml"
+        fi
         # --- bridge environment files ----------------------------------------
         # Names are per bridge because each unit reads its own file.
         bridge_env() {

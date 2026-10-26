@@ -36,6 +36,10 @@
     "matrix.wyli.tech" = 8008;   # synapse — plain http, tailnet-only (2026-10-26)
   };
 
+  # pi session rooms land under this space (created 2026-10-27; bot is admin
+  # there so it can attach m.space.child for every /new room).
+  services.aiMatrixBridge.environment.PI_MATRIX_BRIDGE_SPACE_ID = "!wUGptaxHsUtjpZsvfK:matrix.wyli.tech";
+
   # latest immich from the rolling input (fleet nixpkgs pin ships 3.0.3;
   # fresh instance = zero migration risk) — 2026-10-26
   services.immich.package =
