@@ -1,4 +1,3 @@
-# warden — Matrix stack: what this host runs and who owns it.
 # Design, evidence and the Beeper migration procedure: ~/nix-migration/10-matrix-on-warden.md
 # Implementation: modules/matrix/ (Synapse, postgres, bridges, ingress, watchdog, backup).
 { ... }:
@@ -42,7 +41,7 @@
       #      degraded tick reports alert-delivery failures on top of the real
       #      problems — best-effort by design, nothing is swallowed.
       # Token file is the option default: /var/lib/matrix-secrets/alert-token.
-      alertRoom = "!set-by-parent-after-room-creation:matrix.wyli.tech";
+      alertRoom = "!qhDRunFgTEDDdgrgKK:matrix.wyli.tech";   # "Fleet Alerts" — live 2026-10-27
     };
 
     # plain-http caddy ingress instead (matrix.wyli.tech → :80 → synapse);
