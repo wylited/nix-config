@@ -16,7 +16,9 @@
 +    async handleNewRoom(sourceRoomId, requesterUserId, title) {
 +        try {
 +            const name = title || `pi session ${new Date().toISOString().slice(0, 10)}`;
-+            const { room_id: newRoomId } = await this.client.createRoom({
++            // matrix-bot-sdk's createRoom resolves to the roomId STRING —
++            // destructuring { room_id } yields undefined (observed live).
++            const newRoomId = await this.client.createRoom({
 +                name,
 +                preset: "trusted_private_chat",
 +                visibility: "private",
