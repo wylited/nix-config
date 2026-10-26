@@ -30,7 +30,7 @@
 +                try {
 +                    // m.space.child lives in the space, keyed by the child room.
 +                    const via = this.botUserId.split(":")[1];
-+                    await this.client.sendStateEvent(spaceId, "m.space.child", { via: [via] }, newRoomId);
++                    await this.client.sendStateEvent(spaceId, "m.space.child", newRoomId, { via: [via] });
 +                    suffix = " (added to the pi space)";
 +                }
 +                catch (err) {
