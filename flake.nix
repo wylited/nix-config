@@ -24,6 +24,12 @@
         home-manager.follows = "home-manager";
       };
     };
+    # secrets: encrypted-in-repo, decrypted at activation (plan 03 — the key
+    # strategy decision lives in modules/secrets.nix)
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # hardware-specific NixOS modules (warden: Cezanne laptop — plan 03 input list)
     nixos-hardware.url = "github:NixOS/nixos-hardware";
@@ -41,6 +47,7 @@
 
       modules = [
         ./hosts/scout-darwin
+        inputs.sops-nix.darwinModules.sops   # platform half of modules/secrets.nix (plan 03)
         home-manager.darwinModules.home-manager {
           home-manager = {
             useGlobalPkgs = true;
@@ -58,6 +65,7 @@
       specialArgs = { inherit self inputs; };
       modules = [
         ./hosts/warden
+        inputs.sops-nix.nixosModules.sops    # platform half of modules/secrets.nix (plan 03)
         home-manager.nixosModules.home-manager {
           home-manager = {
             useGlobalPkgs = true;
@@ -75,6 +83,7 @@
       specialArgs = { inherit self inputs; };
       modules = [
         ./hosts/scout-asahi
+        inputs.sops-nix.nixosModules.sops    # platform half of modules/secrets.nix (plan 03)
         home-manager.nixosModules.home-manager {
           home-manager = {
             useGlobalPkgs = true;
@@ -98,6 +107,7 @@
       specialArgs = { inherit self inputs; };
       modules = [
         ./hosts/artificer
+        inputs.sops-nix.nixosModules.sops    # platform half of modules/secrets.nix (plan 03)
       ];
     };
   };

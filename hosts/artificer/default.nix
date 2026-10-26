@@ -34,6 +34,7 @@
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     ../../modules/pi-backup.nix # DRAFT off — nightly restic to warden; enable after key bring-up
+    ../../modules/secrets.nix   # sops-nix base (plan 03): age key gen only, zero secrets yet — see PLAN §14
   ];
 
   # TLS = tailscale cert (path B, 2026-10-16): real LE cert for
