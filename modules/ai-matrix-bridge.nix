@@ -288,6 +288,12 @@ in
         writes; glm-5.3-flash is the cheaper sibling).
       '';
     };
+
+    environment = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = { };
+      description = "Extra environment for the bridge service (e.g. PI_MATRIX_BRIDGE_SPACE_ID).";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -382,7 +388,7 @@ in
         # Override at the host level with the pi space's room id once it
         # exists; the bot needs state-event power in the space.
         PI_MATRIX_BRIDGE_SPACE_ID = lib.mkDefault "";
-      };
+      } // cfg.environment;
       # pi's bash tool spawns whatever is on PATH — the systemd default PATH
       # has no bash/git, so every tool call failed and the model computed
       # answers "mentally" (observed live 2026-10-27). python3: the model

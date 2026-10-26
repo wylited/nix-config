@@ -18,6 +18,25 @@
 let
   cfg = config.services.matrixStack;
   allDatabases = cfg.databases;
+  # Password provider the legacy (Go, pre-bridgev2) mautrix-discord needs for
+  # automatic double puppeting: it logs in with password=HMAC(secret, mxid).
+  # Bridgev2 bridges (whatsapp/instagram) use the standard registration flow
+  # and need nothing here. The secret itself rides in synapse-secrets.yaml
+  # (secrets.nix appends the `modules:` block) — never in the store config.
+  sharedSecretAuth = pkgs.python3.pkgs.buildPythonPackage rec {
+    pname = "shared-secret-auth";
+    version = "1.0";
+    format = "other";
+    src = pkgs.fetchurl {
+      url = "https://raw.githubusercontent.com/devture/matrix-synapse-shared-secret-auth/086a51eb7306a2637375b6f247f8db9c69ec0318/shared_secret_authenticator.py";
+      sha256 = "sha256-1VWM1BnI1GvclYBky5f5Y9HqeThmQUwCWQbsFQM1Eu0=";
+    };
+    dontBuild = true;
+    installPhase = ''
+      install -Dm644 "$src" "$out/${pkgs.python3.sitePackages}/shared_secret_authenticator.py"
+    '';
+    # populated after the first eval tells us the real hash
+  };
 in
 {
   options.services.matrixStack.homeserver = {
@@ -104,6 +123,11 @@ in
       # (./secrets.nix) — the alternative is `settings`, which is world-readable
       # in /nix/store.
       extraConfigFiles = [ "${cfg.secrets.directory}/synapse-secrets.yaml" ];
+
+      # password provider for the legacy discord bridge's automatic double
+      # puppeting (see sharedSecretAuth above); the `modules:` yaml block with
+      # the actual secret lands via synapse-secrets.yaml (secrets.nix).
+      plugins = [ sharedSecretAuth ];
     };
 
     # The generated config file must exist before Synapse reads it, and every
