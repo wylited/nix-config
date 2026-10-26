@@ -76,10 +76,21 @@
     after = [ "podman-speaches.service" ];
     partOf = [ "podman-speaches.service" ];
     wantedBy = [ "multi-user.target" ];
+    # Never inside the activation transaction (see modules/matrix/watchdog.nix
+    # for the full story): switch-to-configuration restarts changed units and
+    # waits, and PartOf=podman-speaches drags this oneshot into every switch
+    # that recreates the container — where the /health wait expires while the
+    # image re-pulls and the failed job turned the whole switch into exit 4
+    # (2026-10-26 03:17, exactly 60×5s wall). The PartOf propagation still
+    # re-runs the unit (post-daemon-reload, i.e. the current script) on every
+    # container restart, so registration still tracks the container.
+    restartIfChanged = false;
     serviceConfig.Type = "oneshot";
     serviceConfig.ExecStart = toString (pkgs.writeShellScript "speaches-preload" ''
       CURL=${pkgs.curl}/bin/curl
-      for i in $(seq 1 60); do
+      # 10 min, not 5: an image re-pull alone outlasted the old 60×5s loop
+      # (this runs in the background via PartOf — it does not block switches).
+      for i in $(seq 1 120); do
         $CURL -sf -m 4 http://127.0.0.1:8000/health >/dev/null 2>&1 && break
         sleep 5
       done
