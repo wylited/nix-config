@@ -53,7 +53,9 @@ in
       globalConfig = "auto_https off";
       virtualHosts =
         let
-          plain = lib.mapAttrs' (n: p: lib.nameValuePair "http://${n}" p) routesCfg;
+          plain = lib.mapAttrs
+            (n: p: { extraConfig = "reverse_proxy 127.0.0.1:${toString p}"; })
+            (lib.mapAttrs' (n: p: lib.nameValuePair "http://${n}" p) routesCfg);
           tls = lib.mapAttrs
             (n: p: {
               useACMEHost = lib.mkIf hasDesecToken "ts.wyli.tech";
