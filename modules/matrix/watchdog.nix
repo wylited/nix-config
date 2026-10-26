@@ -53,8 +53,15 @@ let
       systemctl is-active --quiet "$1" || problems="$problems $1(inactive)"
     }
 
+    # `return 0` is load-bearing: unit scripts run under `set -e` (the NixOS
+    # unit-script wrapper prepends it), and a *healthy* unit makes is-failed
+    # exit 1 — without the return, the script died silently with status 1 on
+    # the first healthy check_failed call, before reporting anything. That
+    # made the check fail every tick while the stack was fully healthy
+    # (verified 2026-10-26: rc=1, no output, all units active, backups fresh).
     check_failed() {
       systemctl is-failed --quiet "$1" && problems="$problems $1(failed)"
+      return 0
     }
 
     check_disk() {
@@ -104,8 +111,11 @@ let
     ${lib.optionalString backupEnabled ''
       # Freshness of both backup paths. Restores are worthless if the last
       # snapshot is a week old.
+      # `*.sql.zst*`, not `*.sql.zst`: postgresqlBackup with compression=zstd
+      # names dumps `<db>.sql.zstd`, and the bare glob never matched — every
+      # run reported a stale dump while the dumps were hours old.
       newest_dump=$(${lib.getExe' pkgs.findutils "find"} ${cfg.backup.dumpDirectory} \
-        -name '*.sql.zst' -newermt '-26 hours' -print -quit 2>/dev/null || true)
+        -name '*.sql.zst*' -newermt '-26 hours' -print -quit 2>/dev/null || true)
       [ -n "$newest_dump" ] || problems="$problems postgres-dump(stale)"
 
       if [ -r ${resticPasswordFile} ]; then
@@ -142,7 +152,7 @@ let
       # system that simply never has anything to say.
       alert_failures_file=/run/matrix-healthcheck-alert-failures
       alert_failures=$(cat "$alert_failures_file" 2>/dev/null || echo 0)
-      [ "$alert_failures" -gt 0 ] && problems="$problems alert-delivery(failed:$alert_failures)"
+      [ "$alert_failures" -gt 0 ] && problems="$problems alert-delivery(failed:$alert_failures)" || true
     ''}
 
     if [ -z "$problems" ]; then
@@ -185,6 +195,15 @@ in
   config = lib.mkIf (cfg.enable && cfg.watchdog.enable) {
     systemd.services.matrix-healthcheck = {
       description = "Matrix stack health check";
+      # A probe must never fail the activation that ships it. switch-to-
+      # configuration restarts every unit whose file changed and waits for
+      # the job, so without this every switch touching this unit (any nixpkgs
+      # bump moves the PATH hashes) re-runs the probe mid-transaction — where
+      # it legitimately reports problems while Synapse is itself restarting —
+      # and nixos-rebuild exits 4 even though the config fully applied. The
+      # timer re-runs the probe within `interval` using the reloaded unit,
+      # so freshness is not lost. (Root cause of the 2026-10 exit-4 streak.)
+      restartIfChanged = false;
       serviceConfig = {
         Type = "oneshot";
         UMask = "0077";
