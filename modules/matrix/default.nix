@@ -160,7 +160,7 @@ in
 
       repository = lib.mkOption {
         type = lib.types.str;
-        default = "file:///var/backup/restic/matrix";
+        default = "local:/var/backup/restic/matrix";   # restic ≥0.17: bare paths are "invalid backend"; file:// also works but `local:` is the documented form
         description = ''
           restic repository URL. Local by default; point this at another host
           over the tailnet (`sftp://...`) or an object store when the
