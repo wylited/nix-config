@@ -296,6 +296,11 @@ in
       inherit group;
       home = stateDir;
     };
+    # systemd chdirs before ExecStartPre can mkdir — the workspace must
+    # pre-exist via tmpfiles or the unit dies with 200/CHDIR on first boot.
+    systemd.tmpfiles.rules = [
+      "d ${workspaceDir} 0700 ${user} ${group} -"
+    ];
     users.groups.${group} = { };
 
     # --- provisioning (oneshot, root — alert-bot idiom) ------------------
