@@ -160,6 +160,14 @@ let
     # The bot owns its workspace; there is nothing to trust in it, and
     # `ask` would hang a headless session on a prompt.
     defaultProjectTrust = "never";
+    # Deterministic shell for the bash tool. pi resolves /bin/bash →
+    # `bash` on PATH → spawn("sh") (the "spawn sh ENOENT" tool failure
+    # captured live 2026-10-27), and NixOS has no /bin/bash. The unit
+    # PATH does carry bashInteractive (which also ships `sh`), but the
+    # probe chain runs per session and fails soft to `sh`; the pinned
+    # store path is checked once and fails LOUD ("Custom shell path not
+    # found") if the closure ever breaks.
+    shellPath = "${pkgs.bashInteractive}/bin/bash";
   };
 
   modelsJson = pkgs.writers.writeJSON "models.json" {
@@ -363,8 +371,20 @@ in
       };
       # pi's bash tool spawns whatever is on PATH — the systemd default PATH
       # has no bash/git, so every tool call failed and the model computed
-      # answers "mentally" (observed live 2026-10-27).
-      path = with pkgs; [ bashInteractive git gnugrep gnused findutils curl jq procps ];
+      # answers "mentally" (observed live 2026-10-27). python3: the model
+      # reached for `python3 -c` on its own in the DM within the first hour
+      # (journal 2026-10-27), and NixOS coreutils-only PATHs don't have it.
+      path = with pkgs; [
+        bashInteractive
+        git
+        gnugrep
+        gnused
+        findutils
+        curl
+        jq
+        procps
+        python3
+      ];
       serviceConfig = {
         Type = "simple";
         User = user;
