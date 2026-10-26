@@ -9,6 +9,7 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
+    ../../modules/secrets.nix   # sops-nix base (plan 03): age key gen only, zero secrets yet — ts-authkey below is its first planned secret
   ];
 
   boot.loader.systemd-boot.enable = true;   # TODO: replace with apple-silicon boot chain

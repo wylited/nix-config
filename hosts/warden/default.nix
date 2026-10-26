@@ -23,6 +23,7 @@
     ../../modules/ai.nix       # pi agent + aichat (MCP-first, empty profiles) — 2026-10-26
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
+    ../../modules/secrets.nix   # sops-nix base (plan 03): age key gen only, zero secrets yet — see PLAN §14
   ];
 
   # dns.nix + caldav.nix MOVED to artificer (2026-10-16, user decision — small
