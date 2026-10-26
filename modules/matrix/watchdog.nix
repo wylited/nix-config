@@ -268,6 +268,11 @@ in
         RestartSec = "30s";
         UMask = "0077";
       };
+      # unit scripts get no PATH: the synapse-module wrapper (which bakes the
+      # registration shared secret + URL) lives in the current system's bin
+      # dir; this unit only ever runs against the booted generation
+      # (restartIfChanged = false), so /run/current-system is exact.
+      path = [ "/run/current-system/sw/bin" ];
       script = ''
         set -eu
         d=${cfg.secrets.directory}
