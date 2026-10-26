@@ -30,7 +30,7 @@
   users.users.immich.extraGroups = [ "render" ];
 
   virtualisation.oci-containers.containers.immich-ml = {
-    image = "ghcr.io/immich-app/immich-machine-learning:release-cuda";
+    image = "ghcr.io/immich-app/immich-machine-learning:release";  # CPU — dGPU dead 2026-10-26
     autoStart = true;
     ports = [ "127.0.0.1:3003:3003" ];
     environment = {
@@ -46,8 +46,7 @@
     };
     volumes = [ "/var/lib/immich-ml:/cache" ];
     extraOptions = [
-      "--device=nvidia.com/gpu=all"   # CDI — podman has no "nvidia" OCI runtime (2026-10-25)
-      "--memory=3g"       # PLAN §11 cap — set ABOVE working set (ms.api lesson)
+      "--memory=2g"       # CPU image — PLAN §11 cap (set ABOVE working set)
     ];
   };
 
