@@ -1,20 +1,23 @@
-# modules/ingress.nix — plan 12 §0: Caddy behind a real wildcard cert.
+# modules/ingress.nix — caddy ingress, dual-path TLS story (2026-10-26):
 #
-# ACME wildcard `*.wyli.tech` via DNS-01 (lego + Cloudflare) — no inbound
-# ports at all, no tailscale-serve dependency, and the names/certs survive
-# any future transport swap. NixOS owns issuance/renewal (security.acme);
-# Caddy only consumes the pem files (useACMEHost).
+# HTTP  : http://<name>.wyli.tech — tokenless, tailnet-only, split-DNS/CGNAT
+#         A-records on the CF zone. WireGuard already encrypts the transport.
+# HTTPS : https://<name>.ts.wyli.tech — real LE wildcard via DNS-01 on deSEC.
+#         ts.wyli.tech is NS-delegated (CF dashboard, manual) to desec.io, so
+#         the API token only ever controls that throwaway subzone.
 #
-# Secret: /etc/nix/acme-cf-token (0600) containing
-#   CLOUDFLARE_DNS_API_TOKEN=<token scoped Zone:DNS:Edit on wyli.tech only>
-# Absent file => module no-ops (same guard pattern as lab-cache.nix):
-# create it, then `nixos-rebuild switch` again to bring ingress up.
+# Secret: /etc/nix/acme-desec-env (0600) containing
+#   DESEC_TOKEN=<deSEC token, ts.wyli.tech zone only>
+# Absent file => TLS path no-ops, plain HTTP stays (guard pattern like
+# lab-cache.nix): create it, then `nixos-rebuild switch` again.
 { config, lib, pkgs, ... }:
 let
   # service hostname → loopback port it terminates for. Per-host: warden keeps
   # the big services' vhosts, artificer (small static box) only dav/cal/dns.
   routesCfg = config.wyli.ingress.routes;
-  hasCfToken = builtins.pathExists "/etc/nix/acme-cf-token";
+  hasDesecToken = builtins.pathExists "/etc/nix/acme-desec-env";
+  # immich.wyli.tech → immich.ts.wyli.tech (TLS twin of every route)
+  tsName = n: builtins.replaceStrings [ ".wyli.tech" ] [ ".ts.wyli.tech" ] n;
 in
 {
   options.wyli.ingress.routes = lib.mkOption {
@@ -25,22 +28,18 @@ in
       "cal.wyli.tech"    = 8423;   # vibecoded CalDAV/CardDAV UI (v0 build, PLAN §3)
       "stt.wyli.tech"    = 8000;   # modules/whisper.nix (speaches, warden)
       "dns.wyli.tech"    = 3000;   # modules/dns.nix (AdGuard Home admin)
-      # matrix.wyli.tech joins here when plan 10 deploys (synapse :8008)
     };
     description = "service vhosts terminated by this host's caddy, name → loopback port";
   };
   config = {
-    # no CF token → plain HTTP on :80, tailnet-only (2026-10-26): WireGuard
-    # already encrypts the transport, so bare http://name is the UX. With a
-    # token everything upgrades to the wildcard TLS / DNS-01 path instead.
-    security.acme = lib.mkIf hasCfToken {
+    security.acme = lib.mkIf hasDesecToken {
       acceptTerms = true;
-      defaults.email = "wyli@wyli.tech";   # LE expiry notices — TODO confirm address
-      certs."wyli.tech" = {
-        domain = "wyli.tech";
-        extraDomainNames = [ "*.wyli.tech" ];
-        dnsProvider = "cloudflare";
-        environmentFile = "/etc/nix/acme-cf-token";
+      defaults.email = "wyli@wyli.tech";
+      certs."ts.wyli.tech" = {
+        domain = "ts.wyli.tech";
+        extraDomainNames = [ "*.ts.wyli.tech" ];
+        dnsProvider = "desec";
+        environmentFile = "/etc/nix/acme-desec-env";
         dnsPropagationCheck = true;
         group = "caddy";                   # caddy user reads the pem files
         reloadServices = [ "caddy" ];
@@ -49,24 +48,30 @@ in
 
     services.caddy = {
       enable = true;
-      # tokenless: no TLS at all — caddy's automatic HTTPS would grab :443
-      # (held by tailscaled) and try cert issuance we don't want.
-      globalConfig = if hasCfToken then "" else "auto_https off";
-      virtualHosts = builtins.mapAttrs
-        (name: port: {
-          useACMEHost = lib.mkIf hasCfToken "wyli.tech";
-          extraConfig = "reverse_proxy 127.0.0.1:${toString port}";
-        })
-        # tokenless: explicit http:// site addresses. auto_https off alone is
-        # not enough — a bare hostname still implies TLS and binds :443 (no
-        # certs there, tailscaled owns the port), leaving :80 unbound where
-        # the tailnet clients actually connect (2026-10-26).
-        (if hasCfToken
-          then routesCfg
-          else lib.mapAttrs' (n: p: lib.nameValuePair "http://${n}" p) routesCfg);
+      # auto_https off: caddy must never self-issue or bind :443 uninvited —
+      # TLS sites are explicit https:// addresses below, with our own cert.
+      globalConfig = "auto_https off";
+      virtualHosts =
+        let
+          plain = lib.mapAttrs' (n: p: lib.nameValuePair "http://${n}" p) routesCfg;
+          tls = lib.mapAttrs
+            (n: p: {
+              useACMEHost = lib.mkIf hasDesecToken "ts.wyli.tech";
+              extraConfig = "reverse_proxy 127.0.0.1:${toString p}";
+            })
+            (lib.genAttrs (builtins.attrNames routesCfg) tsName);
+          tlsSites = if hasDesecToken
+            then lib.mapAttrs' (n: v: lib.nameValuePair "https://${n}" v) tls
+            else { };
+        in
+        plain // tlsSites;
     };
 
     networking.firewall.interfaces."tailscale0".allowedTCPPorts =
-      if hasCfToken then [ 443 ] else [ 80 ];
+      [ 80 ] ++ lib.optionals hasDesecToken [ 443 ];
+    # LAN-direct only where the TLS stack lives (warden); the pi stays
+    # tailnet-only on :80 exactly as before.
+    networking.firewall.interfaces."end0".allowedTCPPorts =
+      lib.optionals hasDesecToken [ 80 443 ];
   };
 }

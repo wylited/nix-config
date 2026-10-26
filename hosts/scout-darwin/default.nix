@@ -122,6 +122,11 @@ in
     CustomUserPreferences."com.apple.dock" = {
       autohide-time-modifier = 0.5;
     };
+
+    # Stop App Nap from throttling Emacs between keystrokes (input lag on macOS)
+    CustomUserPreferences."org.gnu.Emacs" = {
+      NSAppSleepDisabled = true;
+    };
   };
 
   home-manager = {
