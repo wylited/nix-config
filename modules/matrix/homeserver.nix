@@ -31,7 +31,9 @@ let
       url = "https://raw.githubusercontent.com/devture/matrix-synapse-shared-secret-auth/6e959f3073d9a3d6a4bc65215f186d3b519dec84/shared_secret_authenticator.py";
       sha256 = "sha256-967ePQIf9T41yMTjr3BlhwxC8PQHg8p7yCDUnfLnox0=";
     };
-    dontBuild = true;
+    dontUnpack = true;   # src is a single .py — the default unpacker refuses it
+    doCheck = false;
+    pythonImportsCheck = [ ];  # imports synapse at module level; not a dep here
     installPhase = ''
       install -Dm644 "$src" "$out/${pkgs.python3.sitePackages}/shared_secret_authenticator.py"
     '';
