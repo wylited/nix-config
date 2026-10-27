@@ -52,7 +52,7 @@
       '';
     };
   };
-  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 443 ];
+  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 80 443 ];  # 80: warden's dav/cal ts-twins hop through here
 
   # tailscaled keeps the cert valid internally; this refetches the FILES daily
   # and lets caddy see renewals. (tailscale cert no-ops when still valid.)
