@@ -49,7 +49,13 @@
       } ];
       # blocklists live at TOP-LEVEL filters:/user_rules: (NOT filtering.filters
       # — that key is inert). Empty = resolver + rewrites, zero ad-blocking.
-      filters = [ ];
+      # Home ad-blocking (2026-10-27): two solid lists — AdGuard's own
+      # (conservative, maintained) + OISD Big (aggressive catch-all).
+      # AGH fetches on first start and refreshes per its own schedule.
+      filters = [
+        { enabled = true; url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt"; name = "AdGuard DNS filter"; }
+        { enabled = true; url = "https://big.oisd.nl"; name = "OISD Big"; }
+      ];
       user_rules = [ ];
       dns = {
         bind_hosts = [ "0.0.0.0" ];
@@ -96,4 +102,9 @@
     allowedTCPPorts = [ 53 3000 ];
     allowedUDPPorts = [ 53 ];
   };
+  # Home LAN (2026-10-27): home-wide ad-blocking — the router points DHCP
+  # clients at the PI'S LAN ADDRESS (192.168.0.204). Rules are harmless
+  # no-ops on the host without the interface (warden has end0, pi has wlan0).
+  networking.firewall.interfaces."wlan0" = { allowedTCPPorts = [ 53 3000 ]; allowedUDPPorts = [ 53 ]; };
+  networking.firewall.interfaces."end0" = { allowedTCPPorts = [ 53 ]; allowedUDPPorts = [ 53 ]; };
 }
