@@ -26,6 +26,7 @@
     ../../modules/caldav.nix    # radicale moved HERE 2026-10-27 (pi = flaky cold-standby)
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     ../../modules/secrets.nix   # sops-nix base (plan 03): age key gen only, zero secrets yet — see PLAN §14
+    inputs.wycal.nixosModules.wycal  # cal.ts.wyli.tech UI — darkhttpd on :8423 (2026-10-28)
   ];
 
   # dns.nix + caldav.nix MOVED to artificer (2026-10-16, user decision — small
@@ -59,9 +60,17 @@
     };
     "https://cal.ts.wyli.tech" = {
       useACMEHost = "ts.wyli.tech";
-      # wycal web UI lives here when it ships; local :8423 placeholder
+      # wycal static UI (services.wycal, darkhttpd) on loopback :8423
       extraConfig = "reverse_proxy 127.0.0.1:8423";
     };
+  };
+
+  # wycal — the CalDAV/CardDAV web client (github:wylited/wycal), nix-built
+  # static site on :8423 behind the cal.ts.wyli.tech vhost above. Talks
+  # cross-origin to radicale via dav.ts.wyli.tech (CORS there).
+  services.wycal = {
+    enable = true;
+    package = inputs.wycal.packages.x86_64-linux.default;
   };
 
 
@@ -228,8 +237,27 @@
     snapshotInterval = "hourly";
     cleanupInterval = "1d";
     configs = {
-      root = { SUBVOLUME = "/"; };
-      home = { SUBVOLUME = "/home"; };
+      root = {
+        SUBVOLUME = "/";
+        # timeline was silently dead until 2026-10-28: NixOS writes ONLY the
+        # attrs below into /etc/snapper/configs/*, and without TIMELINE_CREATE
+        # the hourly timer no-ops. .snapshots subvolumes are also required —
+        # created by hand on-box (btrfs subvolume create /{,home/}.snapshots);
+        # snapper never creates them itself.
+        TIMELINE_CREATE = true;
+        TIMELINE_LIMIT_HOURLY = "24";
+        TIMELINE_LIMIT_DAILY = "7";
+        TIMELINE_LIMIT_WEEKLY = "4";
+        TIMELINE_LIMIT_MONTHLY = "3";
+      };
+      home = {
+        SUBVOLUME = "/home";
+        TIMELINE_CREATE = true;
+        TIMELINE_LIMIT_HOURLY = "24";
+        TIMELINE_LIMIT_DAILY = "7";
+        TIMELINE_LIMIT_WEEKLY = "4";
+        TIMELINE_LIMIT_MONTHLY = "3";
+      };
     };
   };
 
