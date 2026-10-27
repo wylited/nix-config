@@ -78,10 +78,10 @@
         parental_enabled = false;    # pinned: yaml-merge left these UI-owned and
         safebrowsing_enabled = false; # the pi had drifted them ON (audit 2026-10-26)
         rewrites = [
-          # --- services (full words); dav/cal/dns live on an (pi), rest on wa ---
+          # --- services (full words); dav/cal on wa now (an = cold-standby) ---
           { domain = "immich.wyli.tech"; answer = "100.68.142.0"; enabled = true; }   # wa (warden)
-          { domain = "dav.wyli.tech";    answer = "100.95.249.82"; enabled = true; }  # an — radicale
-          { domain = "cal.wyli.tech";    answer = "100.95.249.82"; enabled = true; }  # an — wycal UI (future)
+          { domain = "dav.wyli.tech";    answer = "100.68.142.0"; enabled = true; }   # wa — radicale (moved from an 2026-10-27)
+          { domain = "cal.wyli.tech";    answer = "100.68.142.0"; enabled = true; }   # wa — wycal UI (future)
           { domain = "stt.wyli.tech";    answer = "100.68.142.0"; enabled = true; }   # wa
           { domain = "matrix.wyli.tech"; answer = "100.68.142.0"; enabled = true; }   # wa — live (plan 10)
           { domain = "dns.wyli.tech";    answer = "100.95.249.82"; enabled = true; }  # an — AGH admin
