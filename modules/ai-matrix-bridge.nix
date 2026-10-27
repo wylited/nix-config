@@ -300,6 +300,18 @@ in
       default = { };
       description = "Extra environment for the bridge service (e.g. PI_MATRIX_BRIDGE_SPACE_ID).";
     };
+
+    trustedUsers = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ "matrix:@wyli:matrix.wyli.tech" ];
+      description = ''
+        Matrix users trusted to command the bot without the 6-digit
+        challenge (transport-namespaced mxids). Seeded into
+        .pi/matrix-bridge.json only when that file is absent — the
+        challenge-auth extension rewrites it at runtime (revokes, new
+        trusts) and must not be clobbered by deploys.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -387,6 +399,12 @@ in
         # sessions/, mcp.json, skills/ — is never touched.
         install -m 0600 ${settingsJson} ${stateDir}/settings.json
         install -m 0600 ${modelsJson} ${stateDir}/models.json
+        # Seed trust only when the auth file is absent — the extension
+        # rewrites it at runtime and deploys must not clobber that state.
+        if [ ! -f ${stateDir}/.pi/matrix-bridge.json ]; then
+          install -D -m 0600 /dev/null ${stateDir}/.pi/matrix-bridge.json
+          printf '%s\n' '${builtins.toJSON { auth.trustedUsers = cfg.trustedUsers; }}' > ${stateDir}/.pi/matrix-bridge.json
+        fi
       '';
       environment = {
         HOME = stateDir;
