@@ -43,11 +43,19 @@
   services.caddy.virtualHosts = lib.mkIf (builtins.pathExists "/etc/nix/acme-desec-env") {
     "https://dav.ts.wyli.tech" = {
       useACMEHost = "ts.wyli.tech";
-      # radicale is loopback-only on the pi — hop through ITS caddy
+      # radicale is loopback-only on the pi — hop through ITS caddy. CORS:
+      # local-dev UIs (wycal on localhost) call this cross-origin; CalDAV
+      # needs Authorization/Depth headers and PROPFIND/OPTIONS methods.
       extraConfig = ''
         reverse_proxy http://100.95.249.82:80 {
           header_up Host dav.wyli.tech
         }
+        @cors_preflight method OPTIONS
+        respond @cors_preflight 204
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Methods "GET, PUT, PROPFIND, OPTIONS, DELETE, REPORT, MKCOL, MOVE"
+        header Access-Control-Allow-Headers "Authorization, Depth, Content-Type, If-Match, If-None-Match, Prefer"
+        header Access-Control-Expose-Headers "ETag, DAV"
       '';
     };
     "https://cal.ts.wyli.tech" = {
