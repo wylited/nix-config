@@ -23,6 +23,7 @@
     ../../modules/ai.nix       # pi agent + aichat (MCP-first, empty profiles) — 2026-10-26
     ../../modules/ai-matrix-bridge.nix # pi agent over Matrix DMs — always-on bot @pi:matrix.wyli.tech (2026-10-26)
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
+    ../../modules/caldav.nix    # radicale moved HERE 2026-10-27 (pi = flaky cold-standby)
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     ../../modules/secrets.nix   # sops-nix base (plan 03): age key gen only, zero secrets yet — see PLAN §14
   ];
@@ -43,13 +44,11 @@
   services.caddy.virtualHosts = lib.mkIf (builtins.pathExists "/etc/nix/acme-desec-env") {
     "https://dav.ts.wyli.tech" = {
       useACMEHost = "ts.wyli.tech";
-      # radicale is loopback-only on the pi — hop through ITS caddy. CORS:
-      # local-dev UIs (wycal on localhost) call this cross-origin; CalDAV
-      # needs Authorization/Depth headers and PROPFIND/OPTIONS methods.
+      # radicale is LOCAL now (pi = cold-standby, 2026-10-27). CORS keeps
+      # local-dev UIs (wycal) working cross-origin; CalDAV needs the
+      # headers and PROPFIND/OPTIONS methods listed.
       extraConfig = ''
-        reverse_proxy http://100.95.249.82:80 {
-          header_up Host dav.wyli.tech
-        }
+        reverse_proxy 127.0.0.1:5232
         @cors_preflight method OPTIONS
         respond @cors_preflight 204
         header Access-Control-Allow-Origin "*"
@@ -60,11 +59,8 @@
     };
     "https://cal.ts.wyli.tech" = {
       useACMEHost = "ts.wyli.tech";
-      extraConfig = ''
-        reverse_proxy http://100.95.249.82:80 {
-          header_up Host cal.wyli.tech
-        }
-      '';
+      # wycal web UI lives here when it ships; local :8423 placeholder
+      extraConfig = "reverse_proxy 127.0.0.1:8423";
     };
   };
 
