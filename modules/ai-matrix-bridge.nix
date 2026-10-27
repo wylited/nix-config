@@ -112,15 +112,21 @@ let
       npm run build
       runHook postBuild
     '';
-    # `/new <title>` — trusted users can spawn a fresh session room from the
-    # main DM (bot creates it, invites them, replies with a matrix.to
-    # permalink; PI_MATRIX_BRIDGE_SPACE_ID additionally nests the room in a
-    # space). Patched onto the tsc OUTPUT, not the TS sources: it's anchored
+    # Two patches onto the tsc OUTPUT, not the TS sources: both are anchored
     # to the dist files this exact pinned rev deterministically compiles, and
-    # keeps upstream's tree untouched for clean version bumps. Rebase the
-    # patch when rev/npmDepsHash move.
+    # keep upstream's tree untouched for clean version bumps. Applied in
+    # order — pi-matrix-bridge-ui.patch's context lines include the /new
+    # hunk's output. Rebase both when rev/npmDepsHash move.
+    #   1. `/new <title>` — trusted users spawn a fresh session room (bot
+    #      creates it, invites them, matrix.to permalink; SPACE_ID nests it
+    #      in a space).
+    #   2. Matrix-side UI: DM passthrough for pi-native slash commands
+    #      (/model /compact /thinking /name; unknown → friendly list, never
+    #      leaked to the model), `!<cmd>` direct shell exec (no model turn),
+    #      and a debounced live room-topic status line (model · ctx · cwd).
     postBuild = ''
       ${pkgs.patch}/bin/patch -p1 < ${./patches/pi-matrix-bridge-new-room.patch}
+      ${pkgs.patch}/bin/patch -p1 < ${./patches/pi-matrix-bridge-ui.patch}
     '';
 
     installPhase = ''
@@ -391,6 +397,10 @@ in
         # Override at the host level with the pi space's room id once it
         # exists; the bot needs state-event power in the space.
         PI_MATRIX_BRIDGE_SPACE_ID = lib.mkDefault "";
+        # Live room-topic status line (🤖 model · ctx · cwd). Set 0 on a host
+        # to disable; rooms where the bot can't set m.room.topic (needs PL 50,
+        # e.g. someone else's untrusted private room) are skipped anyway.
+        PI_MATRIX_BRIDGE_TOPIC = lib.mkDefault "1";
       } // cfg.environment;
       # pi's bash tool spawns whatever is on PATH — the systemd default PATH
       # has no bash/git, so every tool call failed and the model computed
