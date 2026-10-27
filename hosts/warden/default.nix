@@ -1,7 +1,7 @@
 # warden-arch — the 5800H/16GB/1TB homeserver. Deployed (fresh NixOS install
 # 2026-10-08, plan 11); runs immich + speaches + matrix + fallback DNS + the
 # ai stack (modules/ai.nix). Hardware-configuration regenerated at install.
-{ config, pkgs, inputs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
 {
   imports = [
@@ -34,6 +34,15 @@
     "immich.wyli.tech" = 2283;
     "stt.wyli.tech" = 8000;
     "matrix.wyli.tech" = 8008;   # synapse — plain http, tailnet-only (2026-10-26)
+  };
+
+  # TLS twin for the pi's radicale: the wildcard cert lives HERE (warden),
+  # so warden terminates https://dav.ts.wyli.tech and forwards over the
+  # tailnet to the pi's caddy/radicale loopback.
+  services.caddy.virtualHosts."https://dav.ts.wyli.tech" = lib.mkIf
+    (builtins.pathExists "/etc/nix/acme-desec-env") {
+    useACMEHost = "ts.wyli.tech";
+    extraConfig = "reverse_proxy 100.95.249.82:5232";
   };
 
   # pi session rooms land under this space (created 2026-10-27; bot is admin
