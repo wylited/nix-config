@@ -32,18 +32,25 @@
   # terminates what actually runs here:
   wyli.ingress.routes = {
     "immich.wyli.tech" = 2283;
-    "stt.wyli.tech" = 8000;
+    "stt.wyli.tech"    = 8000;
     "matrix.wyli.tech" = 8008;   # synapse — plain http, tailnet-only (2026-10-26)
+    "dns.wyli.tech"    = 3000;   # warden's own AGH admin (fallback resolver)
+  };
+  # TLS twins for the PI's services: the wildcard cert lives here, so warden
+  # terminates and forwards over the tailnet. Token-gated like ingress.nix —
+  # without the deSEC file (Mac/CI eval) caddy would auto-define a
+  # provider-less acme cert.
+  services.caddy.virtualHosts = lib.mkIf (builtins.pathExists "/etc/nix/acme-desec-env") {
+    "https://dav.ts.wyli.tech" = {
+      useACMEHost = "ts.wyli.tech";
+      extraConfig = "reverse_proxy 100.95.249.82:5232";   # pi radicale
+    };
+    "https://cal.ts.wyli.tech" = {
+      useACMEHost = "ts.wyli.tech";
+      extraConfig = "reverse_proxy 100.95.249.82:8423";   # pi CalDAV UI (v0)
+    };
   };
 
-  # TLS twin for the pi's radicale: the wildcard cert lives HERE (warden),
-  # so warden terminates https://dav.ts.wyli.tech and forwards over the
-  # tailnet to the pi's caddy/radicale loopback.
-  services.caddy.virtualHosts."https://dav.ts.wyli.tech" = lib.mkIf
-    (builtins.pathExists "/etc/nix/acme-desec-env") {
-    useACMEHost = "ts.wyli.tech";
-    extraConfig = "reverse_proxy 100.95.249.82:5232";
-  };
 
   # pi session rooms land under this space (created 2026-10-27; bot is admin
   # there so it can attach m.space.child for every /new room).

@@ -22,13 +22,8 @@ in
 {
   options.wyli.ingress.routes = lib.mkOption {
     type = lib.types.attrsOf lib.types.port;
-    default = {
-      "immich.wyli.tech" = 2283;   # modules/immich.nix (warden)
-      "dav.wyli.tech"    = 5232;   # modules/caldav.nix (radicale)
-      "cal.wyli.tech"    = 8423;   # vibecoded CalDAV/CardDAV UI (v0 build, PLAN §3)
-      "stt.wyli.tech"    = 8000;   # modules/whisper.nix (speaches, warden)
-      "dns.wyli.tech"    = 3000;   # modules/dns.nix (AdGuard Home admin)
-    };
+    default = { };   # hosts fully specify — defaults leaked pi-only routes
+                     # onto warden, where their loopback ports don't exist
     description = "service vhosts terminated by this host's caddy, name → loopback port";
   };
   config = {
