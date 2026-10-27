@@ -43,11 +43,20 @@
   services.caddy.virtualHosts = lib.mkIf (builtins.pathExists "/etc/nix/acme-desec-env") {
     "https://dav.ts.wyli.tech" = {
       useACMEHost = "ts.wyli.tech";
-      extraConfig = "reverse_proxy 100.95.249.82:5232";   # pi radicale
+      # radicale is loopback-only on the pi — hop through ITS caddy
+      extraConfig = ''
+        reverse_proxy http://100.95.249.82:80 {
+          header_up Host dav.wyli.tech
+        }
+      '';
     };
     "https://cal.ts.wyli.tech" = {
       useACMEHost = "ts.wyli.tech";
-      extraConfig = "reverse_proxy 100.95.249.82:8423";   # pi CalDAV UI (v0)
+      extraConfig = ''
+        reverse_proxy http://100.95.249.82:80 {
+          header_up Host cal.wyli.tech
+        }
+      '';
     };
   };
 
