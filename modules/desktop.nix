@@ -110,6 +110,11 @@
                              # HEADLESS-1 otherwise (see sway startup below)
       origin_web_ui_allowed = "wan";  # pair from the Mac's browser over the
                                       # tailnet; firewall keeps 47990 closed off-tailnet
+      # Sunshine ≥2026 CSRF-checks browser POSTs against this list (localhost
+      # variants only by default) — without the tailnet origins the pairing
+      # form dies with "CSRF Protection Error". Both names resolve inside the
+      # tailnet only.
+      csrf_allowed_origins = "https://100.68.142.0:47990,https://warden-arch:47990";
     };
   };
   hardware.uinput.enable = true;                # virtual kbd/mouse/gamepad
