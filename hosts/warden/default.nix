@@ -26,7 +26,6 @@
     ../../modules/caldav.nix    # radicale moved HERE 2026-10-27 (pi = flaky cold-standby)
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     ../../modules/secrets.nix   # sops-nix base (plan 03): age key gen only, zero secrets yet — see PLAN §14
-    ../../modules/desktop.nix # plan 13 ACTIVATED 2026-10-28: sway TV console + Sunshine streaming to the Mac (Moonlight client)
     inputs.wycal.nixosModules.wycal  # cal.ts.wyli.tech UI — darkhttpd on :8423 (2026-10-28)
   ];
 
