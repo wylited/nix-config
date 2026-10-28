@@ -2,8 +2,10 @@
 # (sway + greetd autologin + pipewire + mpv/VAAPI), plus the plumbing the
 # Android emulator needs (KVM group is host-side; see wiring note below).
 #
-# ACTIVATED 2026-10-28: imported by hosts/warden — TV console + Sunshine
-# streaming to the Mac (Moonlight client). `kvm` is still NOT in wyli's
+# DORMANT again 2026-10-28 (same day): user turned the console off — import
+# removed from hosts/warden/default.nix. Re-enable: re-add
+# `../../modules/desktop.nix` to that imports list; all Sunshine/streaming
+# config below is ready as deployed today. `kvm` is still NOT in wyli's
 # extraGroups: it rides with the Android-emulator decision below.
 #
 # Compositor decision (2026-10-25): sway — the boring one. wlroots-based, a
