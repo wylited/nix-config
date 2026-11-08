@@ -1,7 +1,7 @@
 # warden-arch — the 5800H/16GB/1TB homeserver. Deployed (fresh NixOS install
-# 2026-10-08, plan 11); runs immich + speaches (CPU) + radicale/wycal +
-# caddy ingress. Matrix was torn down 2026-11-08 (user decision — data
-# deleted, no archive). Hardware-configuration regenerated at install.
+# 2026-10-08, plan 11); runs immich + radicale/wycal + caddy ingress + the
+# dev docker daemon (used over SSH from the Mac). Matrix and speaches were
+# torn down 2026-11-08 (user decisions — data deleted, no archive). Hardware-configuration regenerated at install.
 { config, lib, pkgs, inputs, ... }:
 
 {
@@ -12,7 +12,6 @@
     ../../modules/ingress.nix   # caddy + *.ts.wyli.tech wildcard (deSEC DNS-01)
     ../../modules/immich.nix    # plan 12 §2 — native immich, fresh library
     ../../modules/immich-backup.nix # DRAFT off — library+pgdump restic to the pi; card too small, see header
-    ../../modules/whisper.nix   # speaches (CPU int8; the 3050 is dead)
     ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
     ../../modules/ai.nix       # pi agent + aichat (MCP-first, empty profiles) — 2026-10-26
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
@@ -25,7 +24,6 @@
   # below — it needs CORS for the wycal UI):
   wyli.ingress.routes = {
     "immich.ts.wyli.tech" = 2283;
-    "stt.ts.wyli.tech"    = 8000;
     "cal.ts.wyli.tech"    = 8423;  # wycal static UI (services.wycal, darkhttpd)
   };
   # dav.ts.wyli.tech: radicale is LOCAL (pi = cold-standby, 2026-10-27). CORS
@@ -148,9 +146,15 @@
     btrfs-progs
     ryzenadj
   ];
-  # docker is the runtime for: immich-ML (cuda), speaches, mongo per dev lane.
-  # immich itself is NATIVE now — see ../../modules/immich.nix (plan 12 §2);
-  # the old compose stack is gone by decision, no restore.
+  # ================= dev docker daemon =================
+  # dockerd is the dev server: use it from the Mac over SSH — no extra ports,
+  # no TLS setup, SSH keys are the auth. On the Mac:
+  #   docker context create warden --docker "host=ssh://wyli@warden"
+  #   docker --context warden ps
+  # (wyli is in the docker group; `wyli@warden` is the flake's own deploy
+  # checkout, so treat warden's docker as semi-production — it shares the box
+  # with immich.) immich-ML runs under PODMAN, not this daemon — see
+  # modules/immich.nix.
 
   # arm64 on demand: builds artificer-nixos's sd-image locally + arm64 docker
   # images via qemu (plan 12 §9). Emulated = slow, fine for images/closures.
@@ -268,12 +272,6 @@
     flake = "github:wylited/nix-config#warden";
     flags = [ "--commit-lock-file" ];
   };
-
-  # ================= GPU =================
-  # Mode B is ON — brought up in ../../modules/whisper.nix (plan 12 §8):
-  # compute-only dGPU (amdgpu keeps the display path), RTD3 fine-grained
-  # power management, nvidia container runtime for speaches + immich-ML.
-  # VRAM is shared between them; see PLAN.md §11 for the budget.
 
   # ================= user =================
   users.users.wyli = {
