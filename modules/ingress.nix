@@ -1,30 +1,24 @@
-# modules/ingress.nix — caddy ingress, dual-path TLS story (2026-10-26):
+# modules/ingress.nix — caddy ingress, one path (2026-11-08):
 #
-# HTTP  : http://<name>.wyli.tech — tokenless, tailnet-only, split-DNS/CGNAT
-#         A-records on the CF zone. WireGuard already encrypts the transport.
 # HTTPS : https://<name>.ts.wyli.tech — real LE wildcard via DNS-01 on deSEC.
 #         ts.wyli.tech is NS-delegated (CF dashboard, manual) to desec.io, so
-#         the API token only ever controls that throwaway subzone.
+#         the API token only ever controls that throwaway subzone. There are
+#         NO public wyli.tech service records and none are needed — raw
+#         machine names resolve via MagicDNS (warden-arch, artificer-nixos…).
 #
 # Secret: /etc/nix/acme-desec-env (0600) containing
 #   DESEC_TOKEN=<deSEC token, ts.wyli.tech zone only>
-# Absent file => TLS path no-ops, plain HTTP stays (guard pattern like
+# Absent file => caddy gets no vhosts and no cert (guard pattern like
 # lab-cache.nix): create it, then `nixos-rebuild switch` again.
 { config, lib, pkgs, ... }:
 let
-  # service hostname → loopback port it terminates for. Per-host: warden keeps
-  # the big services' vhosts, artificer (small static box) only dav/cal/dns.
-  routesCfg = config.wyli.ingress.routes;
   hasDesecToken = builtins.pathExists "/etc/nix/acme-desec-env";
-  # immich.wyli.tech → immich.ts.wyli.tech (TLS twin of every route)
-  tsName = n: builtins.replaceStrings [ ".wyli.tech" ] [ ".ts.wyli.tech" ] n;
 in
 {
   options.wyli.ingress.routes = lib.mkOption {
     type = lib.types.attrsOf lib.types.port;
-    default = { };   # hosts fully specify — defaults leaked pi-only routes
-                     # onto warden, where their loopback ports don't exist
-    description = "service vhosts terminated by this host's caddy, name → loopback port";
+    default = { };
+    description = "service vhosts terminated by this host's caddy: <name>.ts.wyli.tech → loopback port";
   };
   config = {
     security.acme = lib.mkIf hasDesecToken {
@@ -50,30 +44,16 @@ in
       # auto_https off: caddy must never self-issue or bind :443 uninvited —
       # TLS sites are explicit https:// addresses below, with our own cert.
       globalConfig = "auto_https off";
-      virtualHosts =
-        let
-          plain = lib.mapAttrs
-            (n: p: { extraConfig = "reverse_proxy 127.0.0.1:${toString p}"; })
-            (lib.mapAttrs' (n: p: lib.nameValuePair "http://${n}" p) routesCfg);
-          tls = lib.mapAttrs'
-            (n: p: lib.nameValuePair (tsName n) {
-              useACMEHost = lib.mkIf hasDesecToken "ts.wyli.tech";
-              extraConfig = "reverse_proxy 127.0.0.1:${toString p}";
-            })
-            routesCfg;
-          tlsSites = if hasDesecToken
-            then lib.mapAttrs'
-              (n: v: lib.nameValuePair "https://${n}" v) tls
-            else { };
-        in
-        plain // tlsSites;
+      virtualHosts = lib.mkIf hasDesecToken (lib.mapAttrs
+        (n: p: {
+          useACMEHost = "ts.wyli.tech";
+          extraConfig = "reverse_proxy 127.0.0.1:${toString p}";
+        })
+        config.wyli.ingress.routes);
     };
 
-    networking.firewall.interfaces."tailscale0".allowedTCPPorts =
-      [ 80 ] ++ lib.optionals hasDesecToken [ 443 ];
-    # LAN-direct only where the TLS stack lives (warden); the pi stays
-    # tailnet-only on :80 exactly as before.
-    networking.firewall.interfaces."end0".allowedTCPPorts =
-      lib.optionals hasDesecToken [ 80 443 ];
+    # DNS-01 needs no inbound 80; caddy only serves :443.
+    networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 443 ];
+    networking.firewall.interfaces."end0".allowedTCPPorts = [ 443 ];  # LAN-direct
   };
 }

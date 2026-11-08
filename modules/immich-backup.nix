@@ -13,8 +13,7 @@
 # Scope = the two things a rebuild cannot regenerate:
 #   /srv/immich                    the library (originals/thumbs/encoded)
 #   $postgresqlBackup.location/    the immich pg dump (users/albums/DB refs);
-#     immich.sql.zstd              dump forced fresh by backupPrepareCommand —
-#                                  same idiom as modules/matrix/backup.nix
+#     immich.sql.zstd              dump forced fresh by backupPrepareCommand
 # NOT included: /var/lib/immich-ml — pure model cache, regenerateable by
 # deletion + re-download (immich.nix storage note).
 #
@@ -47,8 +46,7 @@
 let
   pgCfg = config.services.postgresqlBackup;
   # Same filename mapping as the postgresqlBackup module (immich.nix adds the
-  # "immich" database; compression comes from the merged config — matrix's
-  # backup sets zstd today, the module default is "none").
+  # "immich" database; zstd compression is declared there).
   dumpFile = "${pgCfg.location}/immich.sql" + {
     none = "";
     gzip = ".gz";
@@ -71,7 +69,7 @@ in
         dumpFile
       ];
 
-      # Fresh dump inside every snapshot (matrix-backup idiom) + size guard:
+      # Fresh dump inside every snapshot + size guard:
       # warn when the library outgrows the free space at the target. Warn-only
       # — restic dedup/compression means the raw du number is pessimistic, and
       # the guard must never be the reason a night's backup doesn't happen.
@@ -107,7 +105,7 @@ in
       extraBackupArgs = [ "--retry-lock 10m" ];
 
       timerConfig = {
-        OnCalendar = "04:15"; # after matrix's 03:30 run — no IO/bandwidth overlap
+        OnCalendar = "04:15";  # after the 03:15 pg dump — no IO/bandwidth overlap
         Persistent = true;    # warden sleeps at night; catch up on wake
         RandomizedDelaySec = "15min";
       };
