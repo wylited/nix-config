@@ -91,9 +91,9 @@
   #    already in the package closure. Verify: trigger a transcode, then
   #    `journalctl -u immich-server | grep -iE 'vaapi|falling back'` shows no
   #    software fallback.
-  # 2. Jobs (5800H = 16 threads, ML on the 3050): thumbnails 3 → 5 (docs:
-  #    keep ≤ core count); keep smartSearch 2 / faceDetection 2 (4 GB VRAM
-  #    shared with speaches, and facial-recognition clustering is sequential
-  #    regardless); videoConversion stays 1 until VAAPI is verified, 2 after.
+  # 2. Jobs (5800H = 16 threads): thumbnails 3 → 5 (docs:
+  #    keep ≤ core count); keep smartSearch 2 / faceDetection 2 (facial-
+  #    recognition clustering is sequential regardless); videoConversion
+  #    stays 1 until VAAPI is verified, 2 after.
   #    Defaults today are all stock (system-config row is sparse).
 }
