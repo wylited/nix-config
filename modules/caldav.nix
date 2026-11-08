@@ -1,9 +1,9 @@
 # modules/caldav.nix — plan 12 §3: Radicale = CalDAV + CardDAV source of truth.
 #
 # Plain files under /var/lib/radicale (restic + snapper cover it). Clients
-# (Apple Calendar/Contacts, DAVx5, Thunderbird) talk to dav.wyli.tech
-# directly; the vibecoded UI (cal.wyli.tech, separate project, PLAN §3 v0/v1)
-# is just another CalDAV client — if the UI rots, calendars don't.
+# (Apple Calendar/Contacts, DAVx5, Thunderbird) talk to dav.ts.wyli.tech
+# directly; the vibecoded UI (wycal, cal.ts.wyli.tech, separate project) is
+# just another CalDAV client — if the UI rots, calendars don't.
 #
 # First-boot: create the credential (apr_md5_crypt — NOT bare hex md5,
 # despite the option name "md5"; nixpkgs radicale lacks passlib so bcrypt
