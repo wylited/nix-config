@@ -104,12 +104,5 @@
         ./hosts/artificer
       ];
     };
-
-    # ============ packages (research — dsh; see pkgs/dsh/README.md) ==========
-    packages = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ] (
-      system: {
-        dsh = nixpkgs.legacyPackages.${system}.callPackage ./pkgs/dsh/package.nix { };
-      }
-    );
   };
 }
