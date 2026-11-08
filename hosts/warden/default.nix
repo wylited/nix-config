@@ -18,6 +18,7 @@
     ../../modules/caldav.nix    # radicale (moved here 2026-10-27; pi = flaky cold-standby)
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     inputs.wycal.nixosModules.wycal  # cal.ts.wyli.tech UI — darkhttpd on :8423 (2026-10-28)
+    inputs.dsh.nixosModules.dsh     # ai.ts.wyli.tech — dsh web harness (:3080, git-checkout service, 2026-11-09)
   ];
 
   # caddy terminates the services that run here (dav gets a hand-rolled vhost
@@ -25,6 +26,7 @@
   wyli.ingress.routes = {
     "immich.ts.wyli.tech" = 2283;
     "cal.ts.wyli.tech"    = 8423;  # wycal static UI (services.wycal, darkhttpd)
+    "ai.ts.wyli.tech"     = 3080;  # dsh web UI (services.dsh) — tailnet-only audience, tokenless
   };
   # dav.ts.wyli.tech: radicale is LOCAL (pi = cold-standby, 2026-10-27). CORS
   # keeps local-dev UIs (wycal) working cross-origin; CalDAV needs the
@@ -52,6 +54,14 @@
     package = inputs.wycal.packages.x86_64-linux.default;
   };
 
+  # dsh — web AI harness (github:wylited/deepseek-harness, branch wyli).
+  # Binds 127.0.0.1:3080; caddy fronts it as ai.ts.wyli.tech (tailnet only).
+  # Provisions itself from a git checkout of the fork on first boot (clone +
+  # node 24.9.0 + pnpm install + branded client build — expect a LONG first
+  # start), auto-updates daily via dsh-update.timer (fast-forward only).
+  # Provider keys go in /etc/nix/dsh-env (0600, optional — service runs
+  # degraded without it).
+  services.dsh.enable = true;
 
   # latest immich from the rolling input (fleet nixpkgs pin ships 3.0.3;
   # fresh instance = zero migration risk) — 2026-10-26
