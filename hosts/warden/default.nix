@@ -1,53 +1,39 @@
 # warden-arch — the 5800H/16GB/1TB homeserver. Deployed (fresh NixOS install
-# 2026-10-08, plan 11); runs immich + speaches + matrix + fallback DNS + the
-# ai stack (modules/ai.nix). Hardware-configuration regenerated at install.
+# 2026-10-08, plan 11); runs immich + speaches (CPU) + radicale/wycal +
+# caddy ingress. Matrix was torn down 2026-11-08 (user decision — data
+# deleted, no archive). Hardware-configuration regenerated at install.
 { config, lib, pkgs, inputs, ... }:
 
 {
   imports = [
     ./hardware-configuration.nix
-  # matrix re-enabled 2026-10-26: FRESH deploy (no restore — old data died
-  # with Arch; Beeper replacement per plan 10). serverName = matrix.wyli.tech
-  # (plain-http caddy ingress, no tailscale serve — user decision 2026-10-26).
-  ./matrix.nix # Synapse + mautrix bridges; see ~/nix-migration/10-matrix-on-warden.md
-    ../../modules/dns.nix       # FALLBACK resolver (2026-10-25): identical module+rewrites as the
-                                # pi — Tailscale console lists both as wyli.tech nameservers; git
-                                # is the single source of truth, drift is impossible by construction
     inputs.nixos-hardware.nixosModules.common-cpu-amd
     ../../modules/lab-cache.nix # makerspace attic cache (pull + push)
-    ../../modules/ingress.nix   # plan 12 §0 — caddy + *.wyli.tech wildcard (no-ops without CF token)
+    ../../modules/ingress.nix   # caddy + *.ts.wyli.tech wildcard (deSEC DNS-01)
     ../../modules/immich.nix    # plan 12 §2 — native immich, fresh library
     ../../modules/immich-backup.nix # DRAFT off — library+pgdump restic to the pi; card too small, see header
-    ../../modules/whisper.nix   # plan 12 §8 — GPU Mode B + speaches
+    ../../modules/whisper.nix   # speaches (CPU int8; the 3050 is dead)
     ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
     ../../modules/ai.nix       # pi agent + aichat (MCP-first, empty profiles) — 2026-10-26
-    ../../modules/ai-matrix-bridge.nix # pi agent over Matrix DMs — always-on bot @pi:matrix.wyli.tech (2026-10-26)
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
-    ../../modules/caldav.nix    # radicale moved HERE 2026-10-27 (pi = flaky cold-standby)
+    ../../modules/caldav.nix    # radicale (moved here 2026-10-27; pi = flaky cold-standby)
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
-    ../../modules/secrets.nix   # sops-nix base (plan 03): age key gen only, zero secrets yet — see PLAN §14
     inputs.wycal.nixosModules.wycal  # cal.ts.wyli.tech UI — darkhttpd on :8423 (2026-10-28)
   ];
 
-  # dns.nix + caldav.nix MOVED to artificer (2026-10-16, user decision — small
-  # always-on services shouldn't ride the big server). This host's caddy only
-  # terminates what actually runs here:
+  # caddy terminates the services that run here (dav gets a hand-rolled vhost
+  # below — it needs CORS for the wycal UI):
   wyli.ingress.routes = {
-    "immich.wyli.tech" = 2283;
-    "stt.wyli.tech"    = 8000;
-    "matrix.wyli.tech" = 8008;   # synapse — plain http, tailnet-only (2026-10-26)
-    "dns.wyli.tech"    = 3000;   # warden's own AGH admin (fallback resolver)
+    "immich.ts.wyli.tech" = 2283;
+    "stt.ts.wyli.tech"    = 8000;
+    "cal.ts.wyli.tech"    = 8423;  # wycal static UI (services.wycal, darkhttpd)
   };
-  # TLS twins for the PI's services: the wildcard cert lives here, so warden
-  # terminates and forwards over the tailnet. Token-gated like ingress.nix —
-  # without the deSEC file (Mac/CI eval) caddy would auto-define a
-  # provider-less acme cert.
+  # dav.ts.wyli.tech: radicale is LOCAL (pi = cold-standby, 2026-10-27). CORS
+  # keeps local-dev UIs (wycal) working cross-origin; CalDAV needs the
+  # headers and PROPFIND/OPTIONS methods listed.
   services.caddy.virtualHosts = lib.mkIf (builtins.pathExists "/etc/nix/acme-desec-env") {
     "https://dav.ts.wyli.tech" = {
       useACMEHost = "ts.wyli.tech";
-      # radicale is LOCAL now (pi = cold-standby, 2026-10-27). CORS keeps
-      # local-dev UIs (wycal) working cross-origin; CalDAV needs the
-      # headers and PROPFIND/OPTIONS methods listed.
       extraConfig = ''
         reverse_proxy 127.0.0.1:5232
         @cors_preflight method OPTIONS
@@ -57,11 +43,6 @@
         header Access-Control-Allow-Headers "Authorization, Depth, Content-Type, If-Match, If-None-Match, Prefer"
         header Access-Control-Expose-Headers "ETag, DAV"
       '';
-    };
-    "https://cal.ts.wyli.tech" = {
-      useACMEHost = "ts.wyli.tech";
-      # wycal static UI (services.wycal, darkhttpd) on loopback :8423
-      extraConfig = "reverse_proxy 127.0.0.1:8423";
     };
   };
 
@@ -73,10 +54,6 @@
     package = inputs.wycal.packages.x86_64-linux.default;
   };
 
-
-  # pi session rooms land under this space (created 2026-10-27; bot is admin
-  # there so it can attach m.space.child for every /new room).
-  services.aiMatrixBridge.environment.PI_MATRIX_BRIDGE_SPACE_ID = "!wUGptaxHsUtjpZsvfK:matrix.wyli.tech";
 
   # latest immich from the rolling input (fleet nixpkgs pin ships 3.0.3;
   # fresh instance = zero migration risk) — 2026-10-26
@@ -112,8 +89,6 @@
   };
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  # nvidia driver (modules/whisper.nix) is the only unfree package on warden
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [ "nvidia-x11" "nvidia-persistenced" "nvidia-kernel-modules" ];
   # plan 01/03 hygiene — the Mac's 103 generations are the cautionary tale:
   nix.gc = { automatic = true; dates = "weekly"; options = "--delete-older-than 30d"; };
   nix.settings.auto-optimise-store = true;
@@ -159,7 +134,7 @@
     # host keys copied from Arch /etc/ssh/ssh_host_* at install to keep identity
   };
   # headless bring-up parity with artificer: no password exists at first boot,
-  # so sudo must not ask (ssh stays key-only). Tighten with sops (plan 03).
+  # so sudo must not ask (ssh stays key-only).
   security.sudo.wheelNeedsPassword = false;
 
   # ================= docker: immich only (vvvm decommissioned) =================
@@ -278,8 +253,9 @@
 
   # Replaces the Arch nightly-update.timer. DISABLED for now: it evals the
   # github tree, which lacks the gitignored attic token, so a 02:00 run would
-  # silently strip the lab-cache wiring. Re-enable once the token moves to
-  # sops-nix (plan 03) — until then rebuild from the local checkout.
+  # silently strip the lab-cache wiring. Re-enable once the token is baked
+  # into the public eval (or dropped) — until then rebuild from the local
+  # checkout.
   # NOTE (verified 2026-10-25): a plain `--flake /home/wyli/Repos/nix-config`
   # is a git+file ref — flake.nix is then evaluated PURE, so
   # `builtins.pathExists "/etc/nix/attic-token.txt"` (lab-cache.nix) returns

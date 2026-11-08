@@ -1,44 +1,14 @@
-# modules/whisper.nix — plan 12 §8: speaches (faster-whisper server) on the
-# RTX 3050 + GPU Mode B bring-up (flips plan 08's "Mode A headless").
+# modules/whisper.nix — speaches (faster-whisper server), CPU-only.
 #
-# GPU: compute-only — amdgpu stays the display path, the dGPU never modesets,
-# RTD3 fine-grained power management keeps it at ~0 W idle and wakes it on
-# demand (<1 s). Speaches and immich-ML share the 4 GB (PLAN §11 VRAM note).
-#
-# TODO (before deploy, PLAN §12 #4): confirm the exact speaches CUDA image tag
-# and env-key spelling (viper: SPEACHES__SECTION__KEY) against the current
-# README — the project renamed its env vars when it forked from
-# faster-whisper-server; model key below is the intended value.
+# The RTX 3050 died 2026-10-26 (Xid 119 GSP timeouts, survives full power
+# drain — hardware, not config). All nvidia plumbing is gone; the container
+# runs the CUDA image in CPU mode (WHISPER__COMPUTE_TYPE=int8) on the 5800H,
+# ≈2–2.5× realtime for large-v3. Flip back to a CUDA compute type only with a
+# working card — and re-add hardware.nvidia with it.
 { config, lib, pkgs, ... }:
 {
-  # ---------------- GPU Mode B ----------------
-  services.xserver.videoDrivers = [ "amdgpu" "nvidia" ];
-  # 32-bit GL: hard requirement of the nvidia module for enableNvidia on x86_64
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-  };
-  hardware.nvidia = {
-    package = config.boot.kernelPackages.nvidiaPackages.stable;  # Ampere
-    modesetting.enable = false;        # compute only — no display on the dGPU
-    nvidiaSettings = false;
-    open = false;                      # GA107 mobile: open module GSP-RPC timeouts (verified on-box 2026-10-25); closed module works
-    powerManagement.enable = true;
-    powerManagement.finegrained = true;  # RTD3 (~0 W idle, wakes on demand)
-    # module assertion: finegrained ⇒ offload — headless, but the plumbing
-    # costs nothing and the bus IDs are from the 2026-08-23 warden capture
-    prime = {
-      offload.enable = true;
-      amdgpuBusId = "PCI:4:0:0";
-      nvidiaBusId = "PCI:1:0:0";
-    };
-  };
-  # dGPU RETIRED 2026-10-26: RTX 3050 hardware-dead (Xid 119 GSP timeouts,
-  # reset-required survives battery-disconnect drain). hardware.nvidia stays
-  # so a replacement card revives without config archaeology, but no container
-  # gets GPU plumbing — the CDI generator would fail forever against a dead
-  # card and cascade start-limit kills into every dependent unit.
-  hardware.nvidia-container-toolkit.enable = false;
+  services.xserver.videoDrivers = [ "amdgpu" ];
+  hardware.graphics.enable = true;
 
   virtualisation.oci-containers.containers.speaches = {
     image = "ghcr.io/speaches-ai/speaches:latest-cuda";
@@ -76,14 +46,14 @@
     after = [ "podman-speaches.service" ];
     partOf = [ "podman-speaches.service" ];
     wantedBy = [ "multi-user.target" ];
-    # Never inside the activation transaction (see modules/matrix/watchdog.nix
-    # for the full story): switch-to-configuration restarts changed units and
-    # waits, and PartOf=podman-speaches drags this oneshot into every switch
-    # that recreates the container — where the /health wait expires while the
-    # image re-pulls and the failed job turned the whole switch into exit 4
-    # (2026-10-26 03:17, exactly 60×5s wall). The PartOf propagation still
-    # re-runs the unit (post-daemon-reload, i.e. the current script) on every
-    # container restart, so registration still tracks the container.
+    # Never inside the activation transaction: switch-to-configuration restarts
+    # changed units and waits, and PartOf=podman-speaches drags this oneshot
+    # into every switch that recreates the container — where the /health wait
+    # expires while the image re-pulls and the failed job turned the whole
+    # switch into exit 4 (2026-10-26 03:17, exactly 60×5s wall). The PartOf
+    # propagation still re-runs the unit (post-daemon-reload, i.e. the current
+    # script) on every container restart, so registration still tracks the
+    # container.
     restartIfChanged = false;
     serviceConfig.Type = "oneshot";
     serviceConfig.ExecStart = toString (pkgs.writeShellScript "speaches-preload" ''

@@ -55,13 +55,14 @@
     "d /var/lib/immich-ml 0700 root root -"
   ];
 
-  # nightly DB dump alongside the restic of /srv/immich (PLAN §0 backups).
-  # mkDefault: modules/matrix/backup.nix owns the 02:30 window when present —
-  # one pg-dump window per night, immich joins it.
+  # Nightly DB dump alongside the restic of /srv/immich (PLAN §0 backups).
+  # compression: modules/matrix/backup.nix used to set zstd fleet-wide; it is
+  # gone (matrix torn down 2026-11-08), so immich owns it now.
   services.postgresqlBackup = {
     enable = true;
     startAt = lib.mkDefault "*-*-* 03:15:00";
     databases = [ "immich" ];
+    compression = "zstd";
   };
 
   # tailnet-only reachability for the immich UI (no caddy on this host)
