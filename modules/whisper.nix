@@ -9,6 +9,12 @@
 {
   services.xserver.videoDrivers = [ "amdgpu" ];
   hardware.graphics.enable = true;
+  # dGPU is dead (above): the pruned config no longer pulls in the nvidia
+  # module — which also dropped its nouveau blacklist. Without this, every
+  # boot cold-probes the dead card with nouveau (timeouts, log spam, boot
+  # delay). Re-add hardware.nvidia instead of un-blacklisting if a board
+  # swap ever revives the slot.
+  boot.blacklistedKernelModules = [ "nouveau" ];
 
   virtualisation.oci-containers.containers.speaches = {
     image = "ghcr.io/speaches-ai/speaches:latest-cuda";
