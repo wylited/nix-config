@@ -27,10 +27,15 @@
     # hardware-specific NixOS modules (warden: Cezanne laptop — plan 03 input list)
     nixos-hardware.url = "github:NixOS/nixos-hardware";
 
-    # wycal — CalDAV web client (cal.ts.wyli.tech on warden); nix-built via
+    # wycal — CalDAV/CardDAV web client (cal.ts.wyli.tech on warden); nix-built via
     # bun2nix. Public repo (flipped 2026-10-28) so the fleet flake stays
     # evaluable without github credentials.
     wycal.url = "github:wylited/wycal";
+
+    # dsh — web AI harness (ai.ts.wyli.tech on warden). Ref-pinned to the
+    # fork's wyli branch so a future default-branch change can never silently
+    # point warden at upstream master. Public repo, evaluable without creds.
+    dsh.url = "github:wylited/deepseek-harness/wyli";
 
     # TODO when scout-asahi lands: nixos-apple-silicon input
     #   github:nix-community/nixos-apple-silicon (see nix-migration plan 05)
