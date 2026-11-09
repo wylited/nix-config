@@ -63,6 +63,14 @@
   # degraded without it).
   services.dsh.enable = true;
 
+  # dsh-update setpriv-drops to the dsh uid inside a root wrapper, but the
+  # module's StateDirectory=dsh with no User= makes systemd re-own
+  # /var/lib/dsh to root on every update run — locking the dsh user out of
+  # its own state (observed 2026-11-09: inner died on ".lock: Permission
+  # denied"). dsh.service already owns creation/ownership of the dir; clear
+  # the setting here (empty value renders as a reset).
+  systemd.services.dsh-update.serviceConfig.StateDirectory = lib.mkForce "";
+
   # latest immich from the rolling input (fleet nixpkgs pin ships 3.0.3;
   # fresh instance = zero migration risk) — 2026-10-26
   services.immich.package =
