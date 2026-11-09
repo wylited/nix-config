@@ -23,9 +23,10 @@ email is the ONLY one GitHub links to the wylited account.
 - **Eval floor before every push**: `nix eval --raw .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath --impure > /tmp/e 2>&1; echo $?` — capture to a file and check the EXIT CODE; piping eval through `tail` masks failures (burned twice).
 - **Fleet docs live OUTSIDE the repo**: `~/research/homelab/README.md` (runbooks, service table) + `PLAN.md` (decision history). Keep them in sync with big changes.
 - Host-side secrets (never in the repo): warden `/etc/nix/{warden-passwd,
-  attic-token.txt, ai-env (ZAI+LITHOSAI), acme-desec-env (deSEC DNS-01),
-  radicale-htpasswd}`; artificer `/etc/nix/restic-password*` when backups
-  are enabled. (Matrix-era secrets died with the 2026-11-08 teardown.)
+  attic-token.txt, ai-env (ZAI+LITHOSAI), acme-desec-env (deSEC DNS-01)}`;
+  artificer `/etc/nix/restic-password*` when backups are enabled.
+  (Matrix-era secrets died with the 2026-11-08 teardown; radicale-htpasswd
+  deleted 2026-11-09 — radicale is passwordless, tailnet is the boundary.)
 
 ## Fleet hardening baseline
 

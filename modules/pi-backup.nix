@@ -5,8 +5,9 @@
 #   /var/lib/radicale      calendars + contacts (the whole point of the box)
 #   /var/lib/AdGuardHome   AGH yaml + query stats (rewrites are also in
 #                          modules/dns.nix — this is belt-and-braces)
-#   /etc/nix               radicale-htpasswd, the only real secret on the box
-#                          (nix.conf/registry.json symlinks just tag along)
+#   /etc/nix               nix.conf/registry.json symlinks just tag along
+#                          (no secrets left: radicale-htpasswd deleted
+#                          2026-11-09, radicale is passwordless)
 #
 # Backend: restic sftp → wyli@100.68.142.0:/srv/backups/artificer (warden's
 # tailnet IP — deliberately not a MagicDNS name, so the backup still works

@@ -5,32 +5,21 @@
 # directly; the vibecoded UI (wycal, cal.ts.wyli.tech, separate project) is
 # just another CalDAV client — if the UI rots, calendars don't.
 #
-# First-boot: create the credential (apr_md5_crypt — NOT bare hex md5,
-# despite the option name "md5"; nixpkgs radicale lacks passlib so bcrypt
-# fails at auth time):
-#   openssl passwd -apr1 -salt <s> '<password>'  → /etc/nix/radicale-htpasswd
-#   chgrp radicale /etc/nix/radicale-htpasswd && chmod 640 /etc/nix/radicale-htpasswd
-# (sops-nix owns this file after the plan 03 migration)
+# Passwordless since 2026-11-09 (auth.type = "none"): dav.ts.wyli.tech is
+# tailnet-only, so the tailnet is the auth boundary. Radicale still 401s
+# requests without an Authorization header; clients keep sending their saved
+# credentials and any user/password pair is accepted with owner rights on
+# that username. The old apr1 hash file (/etc/nix/radicale-htpasswd) is dead
+# — delete it from the host on next deploy.
 { config, lib, pkgs, ... }:
 {
   services.radicale = {
     enable = true;
     settings = {
       server.hosts = [ "127.0.0.1:5232" ];
-      auth = {
-        type = "htpasswd";
-        htpasswd_filename = "/etc/nix/radicale-htpasswd";
-        # "md5" = apr_md5_crypt ($apr1$...) — verified on radicale 3.x
-        # 2026-10-27: bare hex md5 gets rejected ("not a valid apr_md5_crypt
-        # hash") and bcrypt needs passlib, which nixpkgs doesn't ship.
-        # Acceptable: TLS terminates at caddy, file is root:radicale 0640.
-        htpasswd_encryption = "md5";
-      };
+      auth.type = "none";
       storage.filesystem_folder = "/var/lib/radicale/collections";
       # rights default = owner_only — single user, nothing to relax
     };
   };
-
-  # radicale reads the htpasswd file as its own user — after creating it:
-  #   chgrp radicale /etc/nix/radicale-htpasswd && chmod 640 /etc/nix/radicale-htpasswd
 }
