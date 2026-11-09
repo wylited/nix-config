@@ -32,7 +32,7 @@
     # evaluable without github credentials.
     wycal.url = "github:wylited/wycal";
 
-    # dsh — web AI harness (ai.ts.wyli.tech on warden). Ref-pinned to the
+    # dsh — web AI harness (ds.ts.wyli.tech on warden). Ref-pinned to the
     # fork's wyli branch so a future default-branch change can never silently
     # point warden at upstream master. Public repo, evaluable without creds.
     dsh.url = "github:wylited/deepseek-harness/wyli";
