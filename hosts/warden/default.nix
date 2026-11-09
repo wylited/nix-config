@@ -64,6 +64,7 @@
   # Provider keys go in /etc/nix/dsh-env (0600, optional — service runs
   # degraded without it).
   services.dsh.enable = true;
+  services.dsh.trustedHosts = [ "ai.ts.wyli.tech" ];
 
   # dsh-update setpriv-drops to the dsh uid inside a root wrapper, but the
   # module's StateDirectory=dsh with no User= makes systemd re-own
