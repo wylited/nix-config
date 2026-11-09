@@ -78,23 +78,24 @@
   # Hash honours the `wyli` sentinel and DSH_CLIENT_GIT_DIRTY=false suppresses
   # the dirty suffix. Runtime effect is benign: the host reads
   # DSH_CLIENT_COMMIT_HASH only for release metadata.
-  systemd.services =
-    {
-      dsh-update.serviceConfig = {
-        StateDirectory = lib.mkForce "";
-        Environment = [
-          "DSH_CLIENT_VERSION=0.2.2-rc.1"
-          "DSH_CLIENT_COMMIT_HASH=wyli"
-          "DSH_CLIENT_GIT_DIRTY=false"
-        ];
-      };
-    } // lib.genAttrs [ "dsh@a" "dsh@b" ] (_: {
-      serviceConfig.Environment = [
-        "DSH_CLIENT_VERSION=0.2.2-rc.1"
-        "DSH_CLIENT_COMMIT_HASH=wyli"
-        "DSH_CLIENT_GIT_DIRTY=false"
-      ];
-    });
+  systemd.services.dsh-update.serviceConfig = {
+    StateDirectory = lib.mkForce "";
+    Environment = [
+      "DSH_CLIENT_VERSION=0.2.2-rc.1"
+      "DSH_CLIENT_COMMIT_HASH=wyli"
+      "DSH_CLIENT_GIT_DIRTY=false"
+    ];
+  };
+  systemd.services."dsh@a".serviceConfig.Environment = [
+    "DSH_CLIENT_VERSION=0.2.2-rc.1"
+    "DSH_CLIENT_COMMIT_HASH=wyli"
+    "DSH_CLIENT_GIT_DIRTY=false"
+  ];
+  systemd.services."dsh@b".serviceConfig.Environment = [
+    "DSH_CLIENT_VERSION=0.2.2-rc.1"
+    "DSH_CLIENT_COMMIT_HASH=wyli"
+    "DSH_CLIENT_GIT_DIRTY=false"
+  ];
 
   # latest immich from the rolling input (fleet nixpkgs pin ships 3.0.3;
   # fresh instance = zero migration risk) — 2026-10-26
