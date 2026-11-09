@@ -30,11 +30,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1794221163,
-        "narHash": "sha256-v3SaZbQDGTAx3+k/p48O4f1ZvTVRGsAtKI5M6/qY4FI=",
+        "lastModified": 1794237561,
+        "narHash": "sha256-SA8KkRt/KAD20m+xEFGfh+YCAg/bC8tNyAJwyFOzww4=",
         "owner": "wylited",
         "repo": "deepseek-harness",
-        "rev": "c1ea899686742e91fef33b61a466f4d9f3260445",
+        "rev": "3f285a5c51142c13b0292694adcfa3fb4831d331",
         "type": "github"
       },
       "original": {
