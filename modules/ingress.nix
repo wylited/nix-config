@@ -16,9 +16,9 @@ let
 in
 {
   options.wyli.ingress.routes = lib.mkOption {
-    type = lib.types.attrsOf lib.types.port;
+    type = lib.types.attrsOf (lib.types.either lib.types.port (lib.types.listOf lib.types.port));
     default = { };
-    description = "service vhosts terminated by this host's caddy: <name>.ts.wyli.tech → loopback port";
+    description = "service vhosts terminated by this host's caddy: <name>.ts.wyli.tech → loopback port, or a list of ports for health-checked blue-green upstreams";
   };
   config = {
     security.acme = lib.mkIf hasDesecToken {
@@ -47,7 +47,17 @@ in
       virtualHosts = lib.mkIf hasDesecToken (lib.mapAttrs
         (n: p: {
           useACMEHost = "ts.wyli.tech";
-          extraConfig = "reverse_proxy 127.0.0.1:${toString p}";
+          # A list = blue-green slots: all upstreams in one pool with active
+          # health checks, so the app's own flip-between-slots updater never
+          # needs a caddy reload. Single int stays a plain reverse_proxy.
+          extraConfig =
+            if lib.isList p then ''
+              reverse_proxy ${lib.concatMapStringsSep " " (pt: "127.0.0.1:${toString pt}") p} {
+                health_uri /
+                health_interval 5s
+                health_timeout 3s
+              }''
+            else "reverse_proxy 127.0.0.1:${toString p}";
         })
         config.wyli.ingress.routes);
     };
