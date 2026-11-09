@@ -18,7 +18,7 @@
     ../../modules/caldav.nix    # radicale (moved here 2026-10-27; pi = flaky cold-standby)
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     inputs.wycal.nixosModules.wycal  # cal.ts.wyli.tech UI — darkhttpd on :8423 (2026-10-28)
-    inputs.dsh.nixosModules.dsh     # ai.ts.wyli.tech — dsh web harness (:3080, git-checkout service, 2026-11-09)
+    inputs.dsh.nixosModules.dsh     # ai.ts.wyli.tech — dsh web harness (:3080/:3081 blue-green, git-checkout service, 2026-11-09)
   ];
 
   # caddy terminates the services that run here (dav gets a hand-rolled vhost
@@ -26,7 +26,7 @@
   wyli.ingress.routes = {
     "immich.ts.wyli.tech" = 2283;
     "cal.ts.wyli.tech"    = 8423;  # wycal static UI (services.wycal, darkhttpd)
-    "ai.ts.wyli.tech"     = 3080;  # dsh web UI (services.dsh) — tailnet-only audience, tokenless
+    "ai.ts.wyli.tech"     = [ 3080 3081 ];  # dsh web UI (services.dsh), blue-green slots a/b — caddy health-checks both
   };
   # dav.ts.wyli.tech: radicale is LOCAL (pi = cold-standby, 2026-10-27). CORS
   # keeps local-dev UIs (wycal) working cross-origin; CalDAV needs the
@@ -67,23 +67,25 @@
   # module's StateDirectory=dsh with no User= makes systemd re-own
   # /var/lib/dsh to root on every update run — locking the dsh user out of
   # its own state (observed 2026-11-09: inner died on ".lock: Permission
-  # denied"). dsh.service already owns creation/ownership of the dir; clear
-  # the setting here (empty value renders as a reset).
+  # denied"). the dsh slots (dsh@a, boot slot) already own creation/ownership
+  # of the dir; clear the setting here (empty value renders as a reset).
   systemd.services.dsh-update.serviceConfig.StateDirectory = lib.mkForce "";
 
   # The module's provision script prefixes DSH_CLIENT_* onto `pnpm install`
   # only — `pnpm run build` runs bare and falls back to git-derived branding
   # (`0.2.2-rc.1-<shorthash>-dirty`; observed 2026-11-09). Exporting the same
-  # values at the unit level reaches the build in both entry paths (dsh
+  # values at the unit level reaches the build in both entry paths (slot
   # ExecStartPre and dsh-update) without touching the fork: repositoryCommit
   # Hash honours the `wyli` sentinel and DSH_CLIENT_GIT_DIRTY=false suppresses
   # the dirty suffix. Runtime effect is benign: the host reads
   # DSH_CLIENT_COMMIT_HASH only for release metadata.
-  systemd.services.dsh.serviceConfig.Environment = [
-    "DSH_CLIENT_VERSION=0.2.2-rc.1"
-    "DSH_CLIENT_COMMIT_HASH=wyli"
-    "DSH_CLIENT_GIT_DIRTY=false"
-  ];
+  systemd.services = lib.genAttrs [ "dsh@a" "dsh@b" ] (_: {
+    serviceConfig.Environment = [
+      "DSH_CLIENT_VERSION=0.2.2-rc.1"
+      "DSH_CLIENT_COMMIT_HASH=wyli"
+      "DSH_CLIENT_GIT_DIRTY=false"
+    ];
+  });
   systemd.services.dsh-update.serviceConfig.Environment = [
     "DSH_CLIENT_VERSION=0.2.2-rc.1"
     "DSH_CLIENT_COMMIT_HASH=wyli"
