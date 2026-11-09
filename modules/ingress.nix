@@ -13,6 +13,10 @@
 { config, lib, pkgs, ... }:
 let
   hasDesecToken = builtins.pathExists "/etc/nix/acme-desec-env";
+  # Serving works off the last-issued cert even without renewal capability:
+  # when the token file is absent, vhosts keep using /var/lib/acme cert files
+  # (valid ~90d per LE) instead of disappearing with the whole ingress.
+  hasServingCert = hasDesecToken || builtins.pathExists "/var/lib/acme/ts.wyli.tech/fullchain.pem";
 in
 {
   options.wyli.ingress.routes = lib.mkOption {
@@ -44,7 +48,7 @@ in
       # auto_https off: caddy must never self-issue or bind :443 uninvited —
       # TLS sites are explicit https:// addresses below, with our own cert.
       globalConfig = "auto_https off";
-      virtualHosts = lib.mkIf hasDesecToken (lib.mapAttrs
+      virtualHosts = lib.mkIf hasServingCert (lib.mapAttrs
         (n: p: {
           useACMEHost = "ts.wyli.tech";
           # A list = blue-green slots: all upstreams in one pool with active
