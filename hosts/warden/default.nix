@@ -31,7 +31,9 @@
   # dav.ts.wyli.tech: radicale is LOCAL (pi = cold-standby, 2026-10-27). CORS
   # keeps local-dev UIs (wycal) working cross-origin; CalDAV needs the
   # headers and PROPFIND/OPTIONS methods listed.
-  services.caddy.virtualHosts = lib.mkIf (builtins.pathExists "/etc/nix/acme-desec-env") {
+  # Guard split (see modules/ingress.nix): serve on the existing cert even
+  # without the desec renewal token.
+  services.caddy.virtualHosts = lib.mkIf (builtins.pathExists "/etc/nix/acme-desec-env" || builtins.pathExists "/var/lib/acme/ts.wyli.tech/fullchain.pem") {
     "https://dav.ts.wyli.tech" = {
       useACMEHost = "ts.wyli.tech";
       extraConfig = ''
