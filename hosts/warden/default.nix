@@ -69,8 +69,7 @@
   # its own state (observed 2026-11-09: inner died on ".lock: Permission
   # denied"). the dsh slots (dsh@a, boot slot) already own creation/ownership
   # of the dir; clear the setting here (empty value renders as a reset).
-  systemd.services.dsh-update.serviceConfig.StateDirectory = lib.mkForce "";
-
+  #
   # The module's provision script prefixes DSH_CLIENT_* onto `pnpm install`
   # only — `pnpm run build` runs bare and falls back to git-derived branding
   # (`0.2.2-rc.1-<shorthash>-dirty`; observed 2026-11-09). Exporting the same
@@ -79,18 +78,23 @@
   # Hash honours the `wyli` sentinel and DSH_CLIENT_GIT_DIRTY=false suppresses
   # the dirty suffix. Runtime effect is benign: the host reads
   # DSH_CLIENT_COMMIT_HASH only for release metadata.
-  systemd.services = lib.genAttrs [ "dsh@a" "dsh@b" ] (_: {
-    serviceConfig.Environment = [
-      "DSH_CLIENT_VERSION=0.2.2-rc.1"
-      "DSH_CLIENT_COMMIT_HASH=wyli"
-      "DSH_CLIENT_GIT_DIRTY=false"
-    ];
-  });
-  systemd.services.dsh-update.serviceConfig.Environment = [
-    "DSH_CLIENT_VERSION=0.2.2-rc.1"
-    "DSH_CLIENT_COMMIT_HASH=wyli"
-    "DSH_CLIENT_GIT_DIRTY=false"
-  ];
+  systemd.services =
+    {
+      dsh-update.serviceConfig = {
+        StateDirectory = lib.mkForce "";
+        Environment = [
+          "DSH_CLIENT_VERSION=0.2.2-rc.1"
+          "DSH_CLIENT_COMMIT_HASH=wyli"
+          "DSH_CLIENT_GIT_DIRTY=false"
+        ];
+      };
+    } // lib.genAttrs [ "dsh@a" "dsh@b" ] (_: {
+      serviceConfig.Environment = [
+        "DSH_CLIENT_VERSION=0.2.2-rc.1"
+        "DSH_CLIENT_COMMIT_HASH=wyli"
+        "DSH_CLIENT_GIT_DIRTY=false"
+      ];
+    });
 
   # latest immich from the rolling input (fleet nixpkgs pin ships 3.0.3;
   # fresh instance = zero migration risk) — 2026-10-26
