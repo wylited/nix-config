@@ -18,7 +18,7 @@
     ../../modules/caldav.nix    # radicale (moved here 2026-10-27; pi = flaky cold-standby)
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     inputs.wycal.nixosModules.wycal  # cal.ts.wyli.tech UI — darkhttpd on :8423 (2026-10-28)
-    inputs.dsh.nixosModules.dsh     # ai.ts.wyli.tech — dsh web harness (:3080/:3081 blue-green, git-checkout service, 2026-11-09)
+    inputs.dsh.nixosModules.dsh     # ds.ts.wyli.tech — dsh web harness (:3080/:3081 blue-green, git-checkout service, 2026-11-09)
   ];
 
   # caddy terminates the services that run here (dav gets a hand-rolled vhost
@@ -26,7 +26,7 @@
   wyli.ingress.routes = {
     "immich.ts.wyli.tech" = 2283;
     "cal.ts.wyli.tech"    = 8423;  # wycal static UI (services.wycal, darkhttpd)
-    "ai.ts.wyli.tech"     = [ 3080 3081 ];  # dsh web UI (services.dsh), blue-green slots a/b — caddy health-checks both
+    "ds.ts.wyli.tech"     = [ 3080 3081 ];  # dsh web UI (services.dsh), blue-green slots a/b — caddy health-checks both
   };
   # dav.ts.wyli.tech: radicale is LOCAL (pi = cold-standby, 2026-10-27). CORS
   # keeps local-dev UIs (wycal) working cross-origin; CalDAV needs the
@@ -46,6 +46,24 @@
         header Access-Control-Expose-Headers "ETag, DAV"
       '';
     };
+
+    # mail.ts.wyli.tech: no mail service — carries only the /inbox pass-through
+    # proxy to Z.ai's zcode Anthropic endpoint (tailnet-only; the wildcard
+    # cert covers it). Pure path rewrite: the client brings its own
+    # credentials and body; caddy just rewrites /inbox/* onto the upstream
+    # base path and fixes the Host/SNI.
+    "https://mail.ts.wyli.tech" = {
+      useACMEHost = "ts.wyli.tech";
+      extraConfig = ''
+        redir /inbox /inbox/ 308
+        handle_path /inbox/* {
+          rewrite * /api/v1/ultra-zai/anthropic{path}
+          reverse_proxy https://zcode.z.ai {
+            header_up Host zcode.z.ai
+          }
+        }
+      '';
+    };
   };
 
   # wycal — the CalDAV/CardDAV web client (github:wylited/wycal), nix-built
@@ -57,14 +75,14 @@
   };
 
   # dsh — web AI harness (github:wylited/deepseek-harness, branch wyli).
-  # Binds 127.0.0.1:3080; caddy fronts it as ai.ts.wyli.tech (tailnet only).
+  # Binds 127.0.0.1:3080; caddy fronts it as ds.ts.wyli.tech (tailnet only).
   # Provisions itself from a git checkout of the fork on first boot (clone +
   # node 24.9.0 + pnpm install + branded client build — expect a LONG first
   # start), auto-updates daily via dsh-update.timer (fast-forward only).
   # Provider keys go in /etc/nix/dsh-env (0600, optional — service runs
   # degraded without it).
   services.dsh.enable = true;
-  services.dsh.trustedHosts = [ "ai.ts.wyli.tech" ];
+  services.dsh.trustedHosts = [ "ds.ts.wyli.tech" ];
 
   # dsh-update setpriv-drops to the dsh uid inside a root wrapper, but the
   # module's StateDirectory=dsh with no User= makes systemd re-own
