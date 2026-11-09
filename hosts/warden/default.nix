@@ -133,6 +133,8 @@
   };
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  # dsh (the harness) installs its own software: `nix profile install nixpkgs#<pkg>` as the dsh user.
+  nix.settings.trusted-users = [ "root" "@wheel" "dsh" ];
   # plan 01/03 hygiene — the Mac's 103 generations are the cautionary tale:
   nix.gc = { automatic = true; dates = "weekly"; options = "--delete-older-than 30d"; };
   nix.settings.auto-optimise-store = true;
