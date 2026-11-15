@@ -76,6 +76,11 @@
     package = inputs.wycal.packages.x86_64-linux.default;
   };
 
+  # sure — personal finance (modules/sure.nix, vendored compose behind caddy).
+  # Secrets: /var/lib/sure/sure.env (root 0600) — created once by hand, the
+  # unit refuses to start without it. AI provider + MCP creds live there.
+  services.sure.enable = true;
+
   # dsh — web AI harness (github:wylited/deepseek-harness, branch wyli).
   # Binds 127.0.0.1:3080; caddy fronts it as ds.ts.wyli.tech (tailnet only).
   # Provisions itself from a git checkout of the fork on first boot (clone +
