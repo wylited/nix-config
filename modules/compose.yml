@@ -241,7 +241,7 @@ services:
     image: redis:latest
     restart: unless-stopped
     volumes:
-      - redis-data:/data
+      - ${SURE_STATE_DIR}/redis:/data
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
