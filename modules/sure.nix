@@ -100,7 +100,7 @@ in
         RemainAfterExit = true;
         WorkingDirectory = cfg.stateDir;
         TimeoutStartSec = "15min";   # first boot: image pull + migrations
-        ExecStart = "${compose} up -d --wait --pull always --profile backup";
+        ExecStart = "${compose} --profile backup up -d --wait --pull always";
         ExecStop = "${compose} down";
       };
     };
