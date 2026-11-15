@@ -28,7 +28,6 @@
     "immich.ts.wyli.tech" = 2283;
     "cal.ts.wyli.tech"    = 8423;  # wycal static UI (services.wycal, darkhttpd)
     "ds.ts.wyli.tech"     = [ 3080 3081 ];  # dsh web UI (services.dsh), blue-green slots a/b — caddy health-checks both
-    "sure.ts.wyli.tech"   = 3000;  # sure (services.sure) — /mcp rides the same vhost
   };
   # dav.ts.wyli.tech: radicale is LOCAL (pi = cold-standby, 2026-10-27). CORS
   # keeps local-dev UIs (wycal) working cross-origin; CalDAV needs the
@@ -46,6 +45,21 @@
         header Access-Control-Allow-Methods "GET, PUT, PROPFIND, OPTIONS, DELETE, REPORT, MKCOL, MOVE"
         header Access-Control-Allow-Headers "Authorization, Depth, Content-Type, If-Match, If-None-Match, Prefer"
         header Access-Control-Expose-Headers "ETag, DAV"
+      '';
+    };
+
+    # sure.ts.wyli.tech: single-user instance (wyli only). The registration
+    # surface is closed at the edge — sign-up and the password/confirmation/
+    # unlock flows (dead weight: no SMTP) get a bare 404; only sign-in, the
+    # app itself, and /register (OAuth dynamic client registration — that is
+    # how MCP clients enroll, NOT user signup) remain reachable. App-level
+    # invite-only stays on as defense in depth (Setting.require_invite_for_signup).
+    "https://sure.ts.wyli.tech" = {
+      useACMEHost = "ts.wyli.tech";
+      extraConfig = ''
+        @signup path /users/sign_up /users/sign_up/* /users/password /users/password/* /users/confirmation /users/confirmation/* /users/unlock /users/unlock/*
+        respond @signup 404
+        reverse_proxy 127.0.0.1:3000
       '';
     };
 
