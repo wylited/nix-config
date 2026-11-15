@@ -15,6 +15,7 @@
     ../../modules/devlanes.nix  # plan 12 §4 — dev-test lane deps + slice
     ../../modules/ai.nix       # pi agent + aichat (MCP-first, empty profiles) — 2026-10-26
     ../../modules/git.nix       # system git identity (/etc/gitconfig) — commits link to wylited
+    ../../modules/sure.nix      # sure.ts.wyli.tech — personal finance (vendored compose behind caddy, 2026-11-15)
     ../../modules/caldav.nix    # radicale (moved here 2026-10-27; pi = flaky cold-standby)
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     inputs.wycal.nixosModules.wycal  # cal.ts.wyli.tech UI — darkhttpd on :8423 (2026-10-28)
@@ -27,6 +28,7 @@
     "immich.ts.wyli.tech" = 2283;
     "cal.ts.wyli.tech"    = 8423;  # wycal static UI (services.wycal, darkhttpd)
     "ds.ts.wyli.tech"     = [ 3080 3081 ];  # dsh web UI (services.dsh), blue-green slots a/b — caddy health-checks both
+    "sure.ts.wyli.tech"   = 3000;  # sure (services.sure) — /mcp rides the same vhost
   };
   # dav.ts.wyli.tech: radicale is LOCAL (pi = cold-standby, 2026-10-27). CORS
   # keeps local-dev UIs (wycal) working cross-origin; CalDAV needs the
