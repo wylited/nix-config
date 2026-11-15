@@ -82,7 +82,7 @@
       extraBackupArgs = [ "--retry-lock 10m" ];
 
       timerConfig = {
-        OnCalendar = "02:15"; # warden's own restic runs 03:30 — no overlap
+        OnCalendar = "02:15"; # early slot; warden has no restic — its immich pg dump is 03:15
         Persistent = true;    # catch up after downtime instead of skipping
         RandomizedDelaySec = "15min";
       };
