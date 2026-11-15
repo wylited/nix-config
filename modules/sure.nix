@@ -38,9 +38,10 @@
 let
   cfg = config.services.sure;
   composeFile = pkgs.writeText "sure-compose.yml" (lib.fileContents ./compose.yml);
-  compose = ''
-    ${pkgs.docker-compose}/bin/docker compose --env-file ${cfg.stateDir}/sure.env -f ${composeFile}
-  '';
+  # one line: a multi-line string here lands verbatim in the unit's
+  # ExecStart/ExecStop and systemd rejects the wrapped lines
+  compose =
+    "${pkgs.docker-compose}/bin/docker-compose --env-file ${cfg.stateDir}/sure.env -f ${composeFile}";
 in
 {
   options.services.sure = {
