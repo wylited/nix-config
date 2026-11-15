@@ -4,7 +4,7 @@
 #         ts.wyli.tech is NS-delegated (CF dashboard, manual) to desec.io, so
 #         the API token only ever controls that throwaway subzone. There are
 #         NO public wyli.tech service records and none are needed — raw
-#         machine names resolve via MagicDNS (warden-arch, artificer-nixos…).
+#         machine names resolve via MagicDNS (warden-nixos, artificer-nixos…).
 #
 # Secret: /etc/nix/acme-desec-env (0600) containing
 #   DESEC_TOKEN=<deSEC token, ts.wyli.tech zone only>

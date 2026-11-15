@@ -61,7 +61,7 @@
       ];
     };
 
-    # ============ warden (wa — homeserver, all of PLAN.md) ============
+    # ============ warden (wn — homeserver, all of PLAN.md) ============
     nixosConfigurations.warden = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = { inherit self inputs; };

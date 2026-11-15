@@ -1,4 +1,5 @@
-# warden-arch — the 5800H/16GB/1TB homeserver. Deployed (fresh NixOS install
+# warden-nixos — the 5800H/16GB/1TB homeserver (renamed from warden-arch
+# 2026-11-16; it runs NixOS). Deployed (fresh NixOS install
 # 2026-10-08, plan 11); runs immich + radicale/wycal + caddy ingress + the
 # dev docker daemon (used over SSH from the Mac). Matrix and speaches were
 # torn down 2026-11-08 (user decisions — data deleted, no archive). Hardware-configuration regenerated at install.
@@ -159,11 +160,11 @@
   # (uid 1000 above already keeps ownership stable across restores.)
 
   # ================= boot / basics =================
-  boot.loader.systemd-boot.enable = true;          # matches current Arch bootloader
+  boot.loader.systemd-boot.enable = true;          # same layout the Arch install used (kept across the NixOS reinstall)
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.configurationLimit = 5; # /boot is only 1 GiB
 
-  networking.hostName = "warden-arch";   # matches the tailnet node name (user pref 2026-10-25)
+  networking.hostName = "warden-nixos";   # matches the tailnet node name (renamed from warden-arch, user pref 2026-11-16)
   networking.networkmanager.enable = true;
   networking.firewall = {
     enable = true;
