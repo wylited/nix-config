@@ -8,6 +8,8 @@ let
   }).androidsdk;
 in
 {
+  imports = [ ../../modules/mihomo.nix ];
+
   nixpkgs.hostPlatform = "aarch64-darwin";
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.android_sdk.accept_license = true;
