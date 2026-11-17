@@ -1,8 +1,8 @@
 # Mihomo as a system VPN (TUN) on macOS, managed by launchd.
 #
 # The proxy credentials in the config file are deliberately NOT in this repo:
-# it is public. The live config lives at the path below, mode 0600, and is
-# generated from the Terraform output of ../homelab/infra/gcp-ranger.
+# it is public. The live config lives at the path below, mode 0600; its values
+# are derived from the Terraform outputs of ../../infra/gcp-ranger.
 { pkgs, ... }:
 
 let
