@@ -14,6 +14,19 @@ in
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.android_sdk.accept_license = true;
 
+  # The pre-repo nix-darwin generation left /etc/resolver/ts.net as a store
+  # symlink; tailscaled refuses to manage DNS over it ("openat ts.net: path
+  # escapes from parent"). Tailscale wants a regular file there, so drop only
+  # a symlink and let the daemon re-create it.
+  # postActivation, not a custom name: nix-darwin only runs its known hooks,
+  # and this has to run after `etc` re-creates the symlink.
+  system.activationScripts.postActivation.text = pkgs.lib.mkAfter ''
+    if [ -L /etc/resolver/ts.net ]; then
+      rm -f /etc/resolver/ts.net
+      launchctl kickstart -k system/com.tailscale.tailscaled || true
+    fi
+  '';
+
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   environment.systemPackages = with pkgs; [
