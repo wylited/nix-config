@@ -26,6 +26,8 @@ in
 
           # Health probes: the page is static, so "is it up" is a same-origin
           # request to the real backend. GET/HEAD only; nothing is cached.
+          # syncthing is deliberately absent: its GUI is loopback-only by
+          # design, and proxying it here would hand LAN clients the controls.
           handle_path /svc/immich/* {
             reverse_proxy 127.0.0.1:2283
           }
@@ -37,9 +39,6 @@ in
           }
           handle_path /svc/dav/* {
             reverse_proxy 127.0.0.1:5232
-          }
-          handle_path /svc/syncthing/* {
-            reverse_proxy 127.0.0.1:8384
           }
           # dsh is blue-green: caddy fails over to the idle slot's port.
           handle_path /svc/dsh/* {
