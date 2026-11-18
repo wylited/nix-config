@@ -393,6 +393,11 @@
   # dsh runs SWE work on warden; docker access is via the daemon socket.
   # This is root-equivalent (docker group) by design — see the dsh module.
   users.users.dsh.extraGroups = [ "docker" ];
+  # The module leaves the system user's passwd home at /var/empty while the
+  # service sets HOME=/var/lib/dsh/home. OpenSSH reads ~/.ssh from the passwd
+  # home, so git/ssh could not see the provisioned key/config. Point it at the
+  # state dir the unit already uses.
+  users.users.dsh.home = "/var/lib/dsh/home";
 
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
