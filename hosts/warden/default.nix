@@ -158,6 +158,9 @@
   # on the pi is undoable here for at least an hour after the fact.
   systemd.tmpfiles.rules = [
     "d /srv/backups/artificer 0700 wyli wyli -"
+    # dsh's provisioned keys live in the state dir, but OpenSSH looks in
+    # ~/.ssh. Keep plain ssh/git working without -i flags.
+    "L+ /var/lib/dsh/home/.ssh - - - - /var/lib/dsh/.ssh"
   ];
   # TODO (with step 3 of pi-backup.nix's bring-up list): append the pi's key
   # to users.users.wyli.openssh.authorizedKeys.keys, restricted to sftp:
@@ -398,9 +401,6 @@
   # home, so git/ssh could not see the provisioned key/config. Point it at the
   # state dir the unit already uses.
   users.users.dsh.home = "/var/lib/dsh/home";
-  # OpenSSH wants ~/.ssh; the provision script keeps the real keys/config in
-  # the state dir. One symlink makes plain ssh/git work without flags.
-  systemd.tmpfiles.rules = [ "L+ /var/lib/dsh/home/.ssh - - - - /var/lib/dsh/.ssh" ];
 
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
