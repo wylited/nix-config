@@ -39,10 +39,12 @@
     PermitRootLogin = lib.mkDefault "prohibit-password"; # keys only
   };
 
-  # NOTE: extraConfig is one merged string — a host override must repeat
-  # these lines if it wants to keep them.
-  services.journald.extraConfig = lib.mkDefault ''
-    SystemMaxUse=2G
-    SystemKeepFree=4G
-  '';
+  # journald.conf keys; mkDefault lets a host override any single key.
+  # (`extraConfig` was removed upstream in nixpkgs 2026-10.)
+  services.journald.settings.Journal = {
+    # Per-key mkDefault: nixpkgs also defines this attrset (Audit=keep), so an
+    # attrset-level mkDefault would lose the merge and silently drop the caps.
+    SystemMaxUse = lib.mkDefault "2G";
+    SystemKeepFree = lib.mkDefault "4G";
+  };
 }

@@ -49,10 +49,10 @@
   # ================= resilience (SD card is the only disk) ===================
   # Journal cap: 64 MiB today, but nothing stopped growth and the SD card is
   # also /. Hard ceiling + retention so a chatty unit can't fill the card.
-  services.journald.extraConfig = ''
-    SystemMaxUse=200M
-    MaxRetentionSec=30day
-  '';
+  services.journald.settings.Journal = {
+    SystemMaxUse = "200M";
+    MaxRetentionSec = "30day";
+  };
 
   sdImage.compressImage = true;            # .img.zst out
   boot.zfs.forceImportRoot = false;        # silence 26.11 default warning (no zfs on this host)

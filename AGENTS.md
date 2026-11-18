@@ -17,14 +17,20 @@ email is the ONLY one GitHub links to the wylited account.
 
 ## Deploy runbook (read before ANY rebuild)
 
-- **warden**: `cd /home/wyli/Repos/nix-config && git pull --rebase origin main && nixos-rebuild switch --flake "path:/home/wyli/Repos/nix-config#warden" --impure`. NEVER `reset --hard` (wiped unpushed agent commits twice, 2026-10-26). `--impure` is load-bearing (pathExists guards — see hosts/warden/default.nix header).
+- **warden deploys**: `config/scripts/fleet-deploy.sh warden` from the Mac (the script implements warden only). Push the commit from the Mac first. The script pulls the target checkout and rebuilds; don't hand-roll remote rebuild commands. It trusts origin/main: that content becomes root via `sudo -n nixos-rebuild`, with no signature check — treat repo write access as root on warden.
+- **warden**: the git remote is **HTTPS and pull-only**. The checkout at `/home/wyli/Repos/nix-config` fetches with `git pull --ff-only`; commits and pushes happen on the Mac only. **Never push from warden**, never rebase there, and NEVER `reset --hard` (wiped unpushed agent commits twice, 2026-10-26). `--impure` is load-bearing (pathExists guards — see hosts/warden/default.nix header).
+- **scout-darwin (Mac)**: the repo flake is the source of truth — `nix build ~/research/homelab/config#darwinConfigurations.scout-darwin.system` then `sudo darwin-rebuild switch --flake ~/research/homelab/config#scout-darwin`. `darwin-update` wraps the switch and pins that flake. `/etc/nix-darwin` is a legacy fork being retired; never edit or switch against it.
 - **warden + any NEW fetchurl in the tree**: add `--option builders '' --option max-jobs 4`. The default remote builder (eez156) cannot fetch some upstreams (github raw 404s from its egress) — the failure surfaces as a bare `Cannot build` with the real error only in `nix log <drv>`. (Old "warden pins max-jobs=0" note is stale: live `/etc/nix/nix.conf` is `max-jobs = auto`.) If a switch says "Cannot build", build the named drv standalone and read its log.
-- **artificer (pi)**: `rsync -a --delete --exclude .git ~/research/homelab/config/ wyli@100.95.249.82:homelab/nix-config/` then ssh + `nixos-rebuild switch --flake ~/homelab/nix-config#artificer-nixos`. Remote shells are fish — pipe compound bash via `cat <<'EOF' | ssh … bash`; sudo lives at `/run/wrappers/bin/sudo` (not on the default PATH of piped shells).
-- **Eval floor before every push**: `nix eval --raw .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath --impure > /tmp/e 2>&1; echo $?` — capture to a file and check the EXIT CODE; piping eval through `tail` masks failures (burned twice).
+- **artificer (pi) — DEFERRED**: pi is offline (SSH key auth denied, `Permission denied (publickey)`); do not attempt deploys or rsyncs. When access returns: `rsync -a --delete --exclude .git ~/research/homelab/config/ wyli@100.95.249.82:homelab/nix-config/` then ssh + `nixos-rebuild switch --flake ~/homelab/nix-config#artificer-nixos`. Remote shells are fish — pipe compound bash via `cat <<'EOF' | ssh … bash`; sudo lives at `/run/wrappers/bin/sudo` (not on the default PATH of piped shells).
+- **Eval floor before every push**: `nix eval --raw .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath --impure > /tmp/e 2>&1; echo $?` — capture to a file and check the EXIT CODE; piping eval through `tail` masks failures (burned twice). CI (`.github/workflows/ci.yml`) evals artificer + scout-darwin toplevels and runs `nix flake check --no-build`, which also evaluates warden under pure eval.
 - **Fleet docs live OUTSIDE the repo**: `~/research/homelab/README.md` (runbooks, service table) + `PLAN.md` (decision history) + `ARCHITECTURE.md` (plain-language map). Keep them in sync with big changes.
 - Host-side secrets (never in the repo): warden `/etc/nix/{warden-passwd,
-  attic-token.txt, ai-env (ZAI+LITHOSAI), acme-desec-env (deSEC DNS-01)}`;
-  artificer `/etc/nix/restic-password*` when backups are enabled.
+  attic-token.txt, ai-env (ZAI+LITHOSAI), acme-desec-env (deSEC DNS-01),
+  dsh-env, ecemaker_build_ed25519, immich-backup_ed25519}` and
+  `/var/lib/sure/sure.env`; artificer `/etc/nix/restic-password*` when backups
+  are enabled. Never paste a secret into `environment.etc.*.text` — it lands
+  world-readable in the store; generate it from the host file at activation
+  (see `modules/lab-cache.nix`).
   (Matrix-era secrets died with the 2026-11-08 teardown; radicale-htpasswd
   deleted 2026-11-09 — radicale is passwordless, tailnet is the boundary.)
 

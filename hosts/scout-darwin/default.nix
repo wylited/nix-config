@@ -17,14 +17,24 @@ in
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   environment.systemPackages = with pkgs; [
+    inputs.rex.packages.${pkgs.stdenv.hostPlatform.system}.rex  # CLI; GUI app installed manually
     android-tools
     jdk21
+    curl-impersonate
+    cloudflared
+    gost
+    syncthing
     androidSdk
     bat
+    catt
     bun
     clang
+    tree
+    google-cloud-sdk
     cocoapods
     watchman
+    fastfetch
+    glow
     coreutils-prefixed
     delta
     fd
@@ -90,6 +100,7 @@ in
     nerd-fonts.iosevka
     nerd-fonts.symbols-only
     atkinson-hyperlegible
+    raleway
     libertinus
   ];
 

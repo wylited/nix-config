@@ -37,6 +37,12 @@
     # point warden at upstream master. Public repo, evaluable without creds.
     dsh.url = "github:wylited/deepseek-harness/wyli";
 
+    # rex — proprietary remote-work server (warden) + CLI (Mac). `stable` has
+    # no release yet (404; the installer falls back to preview). Pinned to an
+    # exact preview build, not the rolling channel URL, so upgrading is an
+    # explicit reviewed act: nix flake update rex after bumping this URL.
+    rex.url = "https://pkgs.superlogical.com/rex/nix/preview/0.1.0-preview.21.tar.gz";
+
     # TODO when scout-asahi lands: nixos-apple-silicon input
     #   github:nix-community/nixos-apple-silicon (see nix-migration plan 05)
   };

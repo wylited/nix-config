@@ -3,10 +3,11 @@
 # (r+w+cc on the `maker` cache), same signing key — closures built here or on
 # eez156 substitute in both directions.
 #
-# The push token lives in modules/attic-token.txt (gitignored). Before
-# system.autoUpgrade evaluates this flake from anywhere but a full checkout
-# (plan 08 TODO), the token must move to sops-nix (plan 03) or ship with the
-# checkout.
+# The push token lives OUTSIDE the repo at /etc/nix/attic-token.txt (0600).
+# Never commit it: the fleet flake is evaluated from git trees and from a
+# public repo, and `environment.etc.*.text` would copy any embedded secret
+# into the world-readable store. The activation script below reads the token
+# at switch time, so only the path (never the value) enters the store.
 {
   config,
   lib,
@@ -28,27 +29,32 @@ in
   config = lib.mkIf hasToken {
     users.groups.attic-push = { };
 
-    environment.etc = {
-      # attic CLI config; watch-store reads it via XDG_CONFIG_HOME=/etc
-      "attic/config.toml" = {
-        text = ''
-          default-server = "attic"
+    # Written at activation from the host-side token, never from a store path:
+    # the file text would otherwise be baked into a world-readable derivation.
+    system.activationScripts.attic-config = {
+      deps = [ "users" ];
+      text = ''
+        token="$(cat ${tokenPath})"
+        install -d -m 0755 /etc/attic
+        # Replace the old environment.etc files (symlinks in earlier
+        # generations) with root-owned regular files.
+        rm -f /etc/attic/config.toml /etc/nix/netrc
+        cat > /etc/attic/config.toml <<EOF
+        default-server = "attic"
 
-          [servers.attic]
-          endpoint = "${endpoint}"
-          token = "${lib.removeSuffix "\n" (builtins.readFile tokenPath)}"
-        '';
-        mode = "0640";
-        group = "attic-push";
-      };
+        [servers.attic]
+        endpoint = "${endpoint}"
+        token = "$token"
+        EOF
+        chown root:attic-push /etc/attic/config.toml
+        chmod 0640 /etc/attic/config.toml
 
-      # basic-auth credentials with which the nix daemon pulls from the private cache
-      "nix/netrc" = {
-        text = ''
-          machine attic.ecemaker.space login attic password ${lib.removeSuffix "\n" (builtins.readFile tokenPath)}
-        '';
-        mode = "0600";
-      };
+        printf 'machine attic.ecemaker.space login attic password %s\n' "$token" \
+          > /etc/nix/netrc
+        chown root:root /etc/nix/netrc
+        chmod 0600 /etc/nix/netrc
+        unset token
+      '';
     };
 
     nix.settings = {

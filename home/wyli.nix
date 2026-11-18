@@ -7,7 +7,20 @@
 
   imports = [
     inputs.zen-browser.homeModules.twilight
+    inputs.rex.homeManagerModules.default
   ];
+
+  # rex: on Linux, CLI + terminfo + personal server (linger is set on the
+  # host, so it survives logout). On macOS the GUI app owns the server and
+  # we only install the CLI from the flake's systemPackages — enabling the
+  # HM module there would warn about ~/.ssh/config, which stays manual.
+  # Remote access is plain ssh:// — no Tailscale Serve hop.
+  programs.rex.enable = pkgs.stdenv.hostPlatform.isLinux;
+  services.rex.enable = pkgs.stdenv.hostPlatform.isLinux;
+  # No ssh TERM guard: it is a `Match exec` block with an unquoted %h, and
+  # taking over ~/.ssh/config for it is more surface than the TERM nicety is
+  # worth. `rex terminfo setup` can add it by hand if ssh-from-Rex breaks.
+  programs.rex.sshGuard = false;
 
   programs.zen-browser = {
     enable = true;

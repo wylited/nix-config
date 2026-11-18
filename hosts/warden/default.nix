@@ -227,6 +227,7 @@
   # ================= docker: immich only (vvvm decommissioned) =================
   virtualisation.docker.enable = true;
   environment.systemPackages = with pkgs; [
+    inputs.rex.packages.${pkgs.stdenv.hostPlatform.system}.rex  # on ssh PATH, not just ~/.nix-profile
     docker-compose
     fish
     helix
@@ -371,6 +372,7 @@
     uid = 1000;                                    # backup restore preserves ownership
     extraGroups = [ "wheel" "networkmanager" "docker" ];
     shell = pkgs.fish;
+    linger = true;                                 # rex personal server survives logout
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
     ];
