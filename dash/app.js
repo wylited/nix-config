@@ -387,7 +387,7 @@ const SERVICES = [
   { name: "dsh", probe: "/svc/dsh/", href: "https://ds.ts.wyli.tech" },
   { name: "sure", probe: "/svc/sure/users/sign_in", href: "https://sure.ts.wyli.tech" },
   { name: "calendar", probe: "/svc/cal/", href: "https://cal.ts.wyli.tech" },
-  { name: "dav", probe: "/svc/dav/", href: "https://dav.ts.wyli.tech" },
+  { name: "dav", probe: "/svc/dav/.web/", href: "https://dav.ts.wyli.tech" },
 ];
 
 const $services = document.getElementById("services");
