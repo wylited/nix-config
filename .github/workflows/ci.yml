@@ -51,5 +51,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Attribution guard: the noreply address is the only one GitHub links to
+      # wylited, so a stray identity silently detaches commits from the
+      # account. PR checkouts are synthetic merge commits authored by GitHub,
+      # hence --no-merges: on a merge ref this validates the branch tip.
+      - name: commit identity is wylited
+        run: |
+          name=$(git log -1 --no-merges --format=%an)
+          email=$(git log -1 --no-merges --format=%ae)
+          if [ "$name" != wylited ] || [ "$email" != 44154103+wylited@users.noreply.github.com ]; then
+            echo "::error::tip commit authored by $name <$email>; expected wylited <44154103+wylited@users.noreply.github.com> (AGENTS.md: Git identity — hard rule)"
+            exit 1
+          fi
+          echo "tip commit identity OK: $name <$email>"
       - uses: DeterminateSystems/nix-installer-action@v16
       - run: nix flake check --no-build
