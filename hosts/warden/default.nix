@@ -21,6 +21,7 @@
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
     inputs.wycal.nixosModules.wycal  # cal.ts.wyli.tech UI — darkhttpd on :8423 (2026-10-28)
     inputs.dsh.nixosModules.dsh     # ds.ts.wyli.tech — dsh web harness (:3080/:3081 blue-green, git-checkout service, 2026-11-09)
+    ../../modules/dashboard.nix     # dash.ts.wyli.tech — static one-pager + /caldav proxy, 2026-11-18
   ];
 
   # caddy terminates the services that run here (dav gets a hand-rolled vhost
@@ -104,6 +105,9 @@
   # Provider keys go in /etc/nix/dsh-env (0600, optional — service runs
   # degraded without it).
   services.dsh.enable = true;
+
+  # dash.ts.wyli.tech — clock, next two weeks of calendar, service links.
+  wyli.dashboard.enable = true;
   services.dsh.trustedHosts = [ "ds.ts.wyli.tech" ];
 
   # dsh-update setpriv-drops to the dsh uid inside a root wrapper, but the
