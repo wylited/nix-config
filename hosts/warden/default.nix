@@ -384,6 +384,10 @@
     linger = true;                                 # rex personal server survives logout
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
+      # dsh (the web agent on this host) may drive the deploy from its own
+      # checkout: ssh wyli@100.68.142.0 + the local NOPASSWD sudo. This is
+      # root-equivalent, same trust level as its docker group membership.
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKFzdW+WWiEcaz3Rs0Vg1+X5Iih2CaPdzdkISHsb9nAZ warden-dsh-deploy"
     ];
   };
   # dsh runs SWE work on warden; docker access is via the daemon socket.

@@ -60,7 +60,10 @@ FLAKE_BASE="path:$REMOTE_REPO"
 # nixos-rebuild accepts the shorthand '#warden'; nix eval needs the full attr path.
 FLAKE_REF="$FLAKE_BASE#warden"
 EVAL_ATTR=nixosConfigurations.warden.config.system.build.toplevel.outPath
-SSH=(ssh -o BatchMode=yes -o ConnectTimeout=15 warden)
+# Default is the Mac's alias. The dsh service on warden has no MagicDNS name
+# for `warden`; it runs this with FLEET_SSH_TARGET=wyli@100.68.142.0.
+SSH_TARGET=${FLEET_SSH_TARGET:-warden}
+SSH=(ssh -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new "$SSH_TARGET")
 
 TMPDIR_DEPLOY=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_DEPLOY"' EXIT
