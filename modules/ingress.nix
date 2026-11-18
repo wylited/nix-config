@@ -87,7 +87,9 @@ in
     };
 
     # DNS-01 needs no inbound 80; caddy only serves :443.
-    networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 443 ];
-    networking.firewall.interfaces."end0".allowedTCPPorts = [ 443 ];  # LAN-direct
+    # Opened on every interface on purpose: the LAN NIC is a USB dongle
+    # (enp4s0f3u1), so interface-scoped rules for the old `end0` name silently
+    # never matched and LAN 443/2283 were dead until 2026-11-18.
+    networking.firewall.allowedTCPPorts = [ 443 ];
   };
 }

@@ -65,11 +65,10 @@
     compression = "zstd";
   };
 
-  # tailnet-only reachability for the immich UI (no caddy on this host)
-  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 2283 ];
-  # LAN-direct for fast uploads from same-network devices (home wifi):
-  # http://<warden-LAN-IP>:2283 — bypasses the tunnel entirely
-  networking.firewall.interfaces."end0".allowedTCPPorts = [ 2283 ];
+  # :2283 is reachable on the tailnet and on the LAN (fast same-network
+  # uploads, bypassing the tunnel). Opened globally because the LAN NIC name
+  # (enp4s0f3u1) never matched the old `end0`-scoped rules.
+  networking.firewall.allowedTCPPorts = [ 2283 ];
 
   # ── Storage findings (verified live 2026-10-26) ──────────────────────────
   # • /srv is a nested btrfs subvol (`srv` under @) → NOT covered by the root

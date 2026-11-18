@@ -204,14 +204,15 @@
     allowedTCPPorts = [ 22 22000 ];                # ssh + syncthing; immich :2283 via tailscale
     allowedUDPPorts = [ 22000 21027 ];             # syncthing quic + local discovery
     # immich-server opens a second HTTP listener on 0.0.0.0:<ephemeral>
-    # (observed 38413; 404s everything, not in any config). ts-input ACCEPTs
-    # tailnet traffic before nixos-fw, so the only place to catch it is
+    # (404s everything, appears in no config). It moved 38413 -> 34289 in
+    # immich 3.4.1, so list both and re-check after every upgrade. ts-input
+    # ACCEPTs tailnet traffic before nixos-fw, so the only place to catch it is
     # INPUT before ts-input. Loopback stays allowed.
     extraCommands = ''
-      iptables -I INPUT 1 -p tcp --dport 38413 ! -i lo -j DROP
+      iptables -I INPUT 1 -p tcp -m multiport --dports 38413,34289 ! -i lo -j DROP
     '';
     extraStopCommands = ''
-      iptables -D INPUT -p tcp --dport 38413 ! -i lo -j DROP || true
+      iptables -D INPUT -p tcp -m multiport --dports 38413,34289 ! -i lo -j DROP || true
     '';
   };
 
