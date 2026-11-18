@@ -1,11 +1,12 @@
 :root {
-  --bg: #0b0e14;
-  --panel: #0f131b;
-  --border: #262b36;
-  --fg: #c9cdd1;
-  --fg-strong: #f2f4f7;
-  --muted: #81858c;
-  --accent: #ff8f40;
+  --bg: #fafafa;
+  --panel: #ffffff;
+  --border: #e2e4e7;
+  --border-soft: #eef0f2;
+  --fg: #5c6166;
+  --fg-strong: #21252b;
+  --muted: #6a737d;
+  --accent: #fa8d3e;
   --mono: "SF Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -99,6 +100,7 @@ section + section {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--panel);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 4%);
   overflow: hidden;
 }
 
@@ -123,7 +125,7 @@ section + section {
   align-items: baseline;
   gap: 14px;
   padding: 11px 18px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .events li:last-child {
@@ -137,6 +139,7 @@ section + section {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
+  background: linear-gradient(to bottom, rgb(0 0 0 / 1.5%), transparent);
 }
 
 .events time {
@@ -153,12 +156,6 @@ section + section {
   white-space: nowrap;
 }
 
-.events li.past .title {
-  color: var(--muted);
-  text-decoration: line-through;
-  text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent);
-}
-
 .events .where {
   margin-top: 2px;
   font-size: 12px;
@@ -171,16 +168,20 @@ section + section {
 .chip {
   font-size: 11px;
   color: var(--c);
-  border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
-  background: color-mix(in srgb, var(--c) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+  background: color-mix(in srgb, var(--c) 12%, transparent);
   border-radius: 999px;
   padding: 1px 9px;
   white-space: nowrap;
 }
 
-.events .empty {
+.events .empty,
+.events .more {
   grid-template-columns: 1fr;
   color: var(--muted);
+  font-size: 13px;
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 
 .tiles {
@@ -198,6 +199,7 @@ section + section {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel);
+  box-shadow: 0 1px 1px rgb(16 24 40 / 3%);
   transition: border-color 120ms ease, color 120ms ease;
 }
 
@@ -212,7 +214,7 @@ footer {
   margin-top: 44px;
   font-size: 11px;
   letter-spacing: 0.08em;
-  color: color-mix(in srgb, var(--muted) 70%, transparent);
+  color: color-mix(in srgb, var(--muted) 65%, transparent);
 }
 
 @media (max-width: 520px) {
