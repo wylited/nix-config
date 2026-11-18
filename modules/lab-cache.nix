@@ -32,7 +32,9 @@ in
     # Written at activation from the host-side token, never from a store path:
     # the file text would otherwise be baked into a world-readable derivation.
     system.activationScripts.attic-config = {
-      deps = [ "users" ];
+      # After `etc`: that stage removes the obsolete environment.etc files,
+      # and running before it would leave the credentials deleted.
+      deps = [ "users" "etc" ];
       text = ''
         token="$(cat ${tokenPath})"
         install -d -m 0755 /etc/attic

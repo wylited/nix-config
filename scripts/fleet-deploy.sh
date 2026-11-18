@@ -303,15 +303,44 @@ fi
 # Activate
 # ---------------------------------------------------------------------------
 step "warden: nixos-rebuild switch"
-if ! remote <<EOF
+set +e
+remote <<EOF
 set -e
 sudo -n nixos-rebuild switch --flake "$FLAKE_REF" --impure --no-write-lock-file
 EOF
-then
-  printf '\n' >&2
-  echo "  switch failed; the previous generation is still booted." >&2
-  echo "  rollback: ssh warden 'sudo nixos-rebuild switch --rollback'" >&2
-  exit 1
+SWITCH_RC=$?
+set -e
+if [ "$SWITCH_RC" -ne 0 ]; then
+  # sshd is among the units the switch restarts, so a dropped connection
+  # (ssh exit 255) is expected even when activation succeeded: systemd-run
+  # keeps it going. Any other exit is a real failure.
+  if [ "$SWITCH_RC" -ne 255 ]; then
+    printf '\n' >&2
+    echo "  switch failed (exit $SWITCH_RC); the previous generation is still booted." >&2
+    echo "  rollback: ssh warden 'sudo nixos-rebuild switch --rollback'" >&2
+    exit 1
+  fi
+  echo "  ssh closed during activation; waiting for the new generation..."
+  SWITCH_OK=0
+  for _ in $(seq 1 90); do
+    sleep 2
+    if NOW=$(remote_out <<'EOF'
+set -e
+readlink /run/current-system
+EOF
+); then
+      if [ "$NOW" = "$EXPECTED" ]; then
+        SWITCH_OK=1
+        break
+      fi
+    fi
+  done
+  if [ "$SWITCH_OK" -ne 1 ]; then
+    echo "  activation did not reach $EXPECTED within 180s" >&2
+    echo "  rollback: ssh warden 'sudo nixos-rebuild switch --rollback'" >&2
+    exit 1
+  fi
+  ok "activation completed after reconnect"
 fi
 
 # ---------------------------------------------------------------------------
