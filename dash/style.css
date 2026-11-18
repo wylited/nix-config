@@ -149,6 +149,11 @@ section + section {
   font-variant-numeric: tabular-nums;
 }
 
+.events li > div {
+  min-width: 0; /* 1fr still honours min-content; without this a long title
+                   widens the grid past the card and the ellipsis never fires */
+}
+
 .events .title {
   color: var(--fg-strong);
   overflow: hidden;
