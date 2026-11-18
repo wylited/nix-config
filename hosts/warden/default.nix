@@ -140,6 +140,11 @@
     "DSH_CLIENT_GIT_DIRTY=false"
   ];
 
+  # The daily update is a oneshot with no retry; a transient DNS failure at
+  # 2026-11-18 00:00 left the checkout stale for a day. Retry every 6h
+  # instead (fast-forward only; a no-op run costs one git fetch).
+  systemd.timers.dsh-update.timerConfig.OnCalendar = lib.mkForce "*-*-* 00/6:00:00";
+
   # latest immich from the rolling input (fleet nixpkgs pin ships 3.0.3;
   # fresh instance = zero migration risk) — 2026-10-26
   services.immich.package =
@@ -228,6 +233,10 @@
   virtualisation.docker.enable = true;
   environment.systemPackages = with pkgs; [
     inputs.rex.packages.${pkgs.stdenv.hostPlatform.system}.rex  # on ssh PATH, not just ~/.nix-profile
+    # dsh SWE toolchain (the unit PATH ends in /run/current-system/sw/bin)
+    bun
+    biome
+    pnpm
     docker-compose
     fish
     helix
@@ -377,6 +386,10 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
     ];
   };
+  # dsh runs SWE work on warden; docker access is via the daemon socket.
+  # This is root-equivalent (docker group) by design — see the dsh module.
+  users.users.dsh.extraGroups = [ "docker" ];
+
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
   ];

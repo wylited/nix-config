@@ -55,13 +55,20 @@ in
           # health checks, so the app's own flip-between-slots updater never
           # needs a caddy reload. Single int stays a plain reverse_proxy.
           extraConfig =
-            if lib.isList p then ''
-              reverse_proxy ${lib.concatMapStringsSep " " (pt: "127.0.0.1:${toString pt}") p} {
-                health_uri /
-                health_interval 5s
-                health_timeout 3s
-              }''
-            else "reverse_proxy 127.0.0.1:${toString p}";
+            # dsh's blue-green flip replaces the revisioned plugin bundles.
+            # Without this, a PWA/browser can keep a cached shell pointing at
+            # revisions the new slot no longer serves. Assets stay cacheable.
+            lib.optionalString (n == "ds.ts.wyli.tech") ''
+              @dsh_shell path / /index.html
+              header @dsh_shell Cache-Control "no-store"
+            ''
+            + (if lib.isList p then ''
+                reverse_proxy ${lib.concatMapStringsSep " " (pt: "127.0.0.1:${toString pt}") p} {
+                  health_uri /
+                  health_interval 5s
+                  health_timeout 3s
+                }''
+              else "reverse_proxy 127.0.0.1:${toString p}");
         })
         config.wyli.ingress.routes);
     };
