@@ -686,12 +686,7 @@ async function loadWeather() {
       WMO[current.weather_code] ?? "",
       `${current.relative_humidity_2m}%`,
     ].filter(Boolean);
-    $weather.textContent = "";
-    for (const part of parts) {
-      const span = document.createElement("span");
-      span.textContent = part;
-      $weather.append(span);
-    }
+    $weather.textContent = parts.join(" · ");
     $weather.title = `Hong Kong · ${current.time.replace("T", " ")}`;
     $weather.hidden = false;
   } catch {
