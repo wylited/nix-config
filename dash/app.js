@@ -22,7 +22,7 @@ const CALENDARS = [
 ];
 
 const HORIZON_DAYS = 14;
-const MAX_ROWS = 20;
+const MAX_ROWS = 12;
 const USER = "wyli";
 const DAY = 86400000;
 const DOW = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
@@ -271,7 +271,9 @@ function rowsFor(events, from, to) {
     // Overrides whose original slot fell outside the generated window.
     for (const [ms, ov] of group.overrides) if (!seen.has(ms)) push(ov, ov.startMs);
   }
-  return rows.filter((r) => r.startMs >= from - DAY && r.startMs <= to);
+  // Keep what has not finished yet (`endMs > from`) so an in-progress event
+  // stays visible, and nothing from earlier today does.
+  return rows.filter((r) => r.endMs > from && r.startMs <= to);
 }
 
 /* ---------- render ---------- */

@@ -167,7 +167,7 @@ section + section {
 
 .chip {
   font-size: 11px;
-  color: var(--c);
+  color: color-mix(in srgb, var(--c) 68%, #21252b);
   border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
   background: color-mix(in srgb, var(--c) 12%, transparent);
   border-radius: 999px;
