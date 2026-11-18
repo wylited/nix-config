@@ -459,7 +459,8 @@ $toggle.addEventListener("click", () => {
 
 tick();
 setInterval(tick, 15000);
-refresh();
-setInterval(refresh, 300000);
-refreshStatus();
+// Status first: the calendar pulls nine RFC 4918 REPORTs, and browsers cap
+// connections per origin — probing after them made the last probe look slow.
+refreshStatus().finally(() => refresh());
 setInterval(refreshStatus, 60000);
+setInterval(refresh, 300000);
