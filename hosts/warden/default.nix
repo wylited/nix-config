@@ -177,9 +177,11 @@
   # ================= backup target for artificer (the pi) ====================
   # The pi's nightly restic lands here via sftp over the tailnet — see
   # modules/pi-backup.nix (DRAFT, enable still off there; this dir + rule are
-  # harmless to deploy ahead of it). tmpfiles owns the directory; the hourly
-  # root snapper config above also snapshots /srv/backups, so a botched prune
-  # on the pi is undoable here for at least an hour after the fact.
+  # harmless to deploy ahead of it). tmpfiles owns the directory.
+  #
+  # WARNING: /srv is a nested btrfs subvolume, so the root snapper config does
+  # NOT cover this backup dir — it shares the disk with everything it backs up.
+  # A botched prune on the pi is not recoverable here.
   systemd.tmpfiles.rules = [
     "d /srv/backups/artificer 0700 wyli wyli -"
     # dsh's provisioned keys live in the state dir, but OpenSSH looks in

@@ -2,19 +2,17 @@
 # warden over the tailnet (the "not backed up anywhere" gap).
 #
 # Scope = only what a rebuild cannot regenerate:
-#   /var/lib/radicale      calendars + contacts (the whole point of the box)
-#   /var/lib/AdGuardHome   AGH yaml + query stats (rewrites are also in
-#                          modules/dns.nix — this is belt-and-braces)
+#   /var/lib/<svc>         whatever state the pi actually grows
 #   /etc/nix               nix.conf/registry.json symlinks just tag along
 #                          (no secrets left: radicale-htpasswd deleted
 #                          2026-11-09, radicale is passwordless)
 #
 # Backend: restic sftp → wyli@100.68.142.0:/srv/backups/artificer (warden's
 # tailnet IP — deliberately not a MagicDNS name, so the backup still works
-# when DNS is what's broken; that's the failure this guards). Warden's hourly
-# snapper snapshots of / also cover the backup dir, so a botched prune on the
-# pi is undoable on warden. Restic-over-tailnet = encrypted + authenticated
-# transport for free, no port opening on either side.
+# when DNS is what's broken; that's the failure this guards). The target sits
+# on warden's disk but is NOT snapshotted (/srv is a nested subvolume), so this
+# buys one copy, not one copy on different hardware. Restic-over-tailnet =
+# encrypted + authenticated transport for free, no port opening either side.
 #
 # DRAFT — enable is OFF until the two TODO files exist on the pi; enabling
 # early just makes the timer fail loudly (missing key/password). Bring-up:

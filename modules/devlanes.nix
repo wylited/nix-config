@@ -6,7 +6,7 @@
 # Mongo stays in docker inside each project's compose (plan 02's call).
 #
 # HARD RULE (user, 2026-10-11): exactly ONE lane live at a time — enforced by
-# scripts/deploy.sh (stops the previous lane before starting the next), and
+# systemd (stops the previous lane unit before starting the next), and
 # the 4 GB slice here is the hard ceiling for any lane-native services.
 { config, lib, pkgs, ... }:
 {
