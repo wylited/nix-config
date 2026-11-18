@@ -23,6 +23,31 @@ in
           handle_path /caldav/* {
             reverse_proxy 127.0.0.1:5232
           }
+
+          # Health probes: the page is static, so "is it up" is a same-origin
+          # request to the real backend. GET/HEAD only; nothing is cached.
+          handle_path /svc/immich/* {
+            reverse_proxy 127.0.0.1:2283
+          }
+          handle_path /svc/cal/* {
+            reverse_proxy 127.0.0.1:8423
+          }
+          handle_path /svc/sure/* {
+            reverse_proxy 127.0.0.1:3000
+          }
+          handle_path /svc/dav/* {
+            reverse_proxy 127.0.0.1:5232
+          }
+          handle_path /svc/syncthing/* {
+            reverse_proxy 127.0.0.1:8384
+          }
+          # dsh is blue-green: caddy fails over to the idle slot's port.
+          handle_path /svc/dsh/* {
+            reverse_proxy 127.0.0.1:3080 127.0.0.1:3081 {
+              lb_policy first
+              lb_try_duration 2s
+            }
+          }
           handle {
             root * ${../dash}
             file_server

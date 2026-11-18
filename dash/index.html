@@ -21,6 +21,11 @@
         </div>
       </header>
 
+      <section>
+        <h2>Services</h2>
+        <nav class="tiles" id="services"></nav>
+      </section>
+
       <section class="panel">
         <div class="panel-head">
           <h2>Upcoming</h2>
@@ -31,15 +36,24 @@
         </ul>
       </section>
 
-      <section>
-        <h2>Services</h2>
-        <nav class="tiles">
-          <a href="https://immich.ts.wyli.tech">immich</a>
-          <a href="https://cal.ts.wyli.tech">calendar</a>
-          <a href="https://sure.ts.wyli.tech">sure</a>
-          <a href="https://dav.ts.wyli.tech">dav</a>
-          <a href="https://ds.ts.wyli.tech">dsh</a>
-        </nav>
+      <section class="panel">
+        <div class="panel-head">
+          <h2>dsh inbox</h2>
+          <button type="button" id="ask-toggle" aria-expanded="false" aria-controls="ask-body">open</button>
+        </div>
+        <div id="ask-body" class="ask" hidden>
+          <iframe
+            id="ask-frame"
+            title="dsh"
+            data-src="https://ds.ts.wyli.tech/"
+            loading="lazy"
+            referrerpolicy="same-origin"
+          ></iframe>
+          <p class="muted hint">
+            The real dsh composer, embedded. Ask, then close this panel; the session stays on
+            <a href="https://ds.ts.wyli.tech/">ds.ts.wyli.tech</a>.
+          </p>
+        </div>
       </section>
 
       <footer>warden · tailnet</footer>

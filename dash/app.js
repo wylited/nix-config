@@ -378,7 +378,79 @@ async function refresh() {
     : `next ${HORIZON_DAYS} days`;
 }
 
+/* ---------- service status ---------- */
+
+// Same-origin probes through this vhost's /svc/* proxies: a real request to the
+// real backend, so "up" means the service answered, not that a name resolves.
+const SERVICES = [
+  { name: "immich", probe: "/svc/immich/api/server/version", href: "https://immich.ts.wyli.tech" },
+  { name: "dsh", probe: "/svc/dsh/", href: "https://ds.ts.wyli.tech" },
+  { name: "sure", probe: "/svc/sure/users/sign_in", href: "https://sure.ts.wyli.tech" },
+  { name: "calendar", probe: "/svc/cal/", href: "https://cal.ts.wyli.tech" },
+  { name: "dav", probe: "/svc/dav/", href: "https://dav.ts.wyli.tech" },
+  { name: "syncthing", probe: "/svc/syncthing/", href: "http://warden-nixos:8384" },
+];
+
+const $services = document.getElementById("services");
+
+async function probe(svc) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 4000);
+  const started = performance.now();
+  try {
+    const res = await fetch(svc.probe, { cache: "no-store", redirect: "manual", signal: ctrl.signal });
+    const ms = Math.round(performance.now() - started);
+    if (res.status >= 500) return { state: "degraded", ms };
+    return { state: "up", ms };
+  } catch {
+    return { state: "down", ms: null };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function refreshStatus() {
+  const states = await Promise.all(SERVICES.map(probe));
+  $services.textContent = "";
+  SERVICES.forEach((svc, i) => {
+    const { state, ms } = states[i];
+    const a = document.createElement("a");
+    a.className = `tile ${state}`;
+    a.href = svc.href;
+    a.title = state === "down" ? "no response" : state === "degraded" ? "server error" : `${ms} ms`;
+
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    a.append(dot, document.createTextNode(svc.name));
+
+    if (ms !== null) {
+      const timing = document.createElement("span");
+      timing.className = "ms";
+      timing.textContent = `${ms}ms`;
+      a.append(timing);
+    }
+    $services.append(a);
+  });
+}
+
+/* ---------- dsh inbox ---------- */
+
+const $toggle = document.getElementById("ask-toggle");
+const $askBody = document.getElementById("ask-body");
+const $frame = document.getElementById("ask-frame");
+
+$toggle.addEventListener("click", () => {
+  const open = $askBody.hidden;
+  $askBody.hidden = !open;
+  $toggle.setAttribute("aria-expanded", String(open));
+  $toggle.textContent = open ? "close" : "open";
+  // Lazy: the iframe only loads (and only asks for the LAN password) on demand.
+  if (open && !$frame.getAttribute("src")) $frame.src = $frame.dataset.src;
+});
+
 tick();
 setInterval(tick, 15000);
 refresh();
 setInterval(refresh, 300000);
+refreshStatus();
+setInterval(refreshStatus, 60000);
