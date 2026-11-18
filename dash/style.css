@@ -72,7 +72,7 @@ header {
 .weather span + span::before {
   content: "·";
   margin: 0 7px;
-  color: var(--border);
+  color: color-mix(in srgb, var(--muted) 45%, transparent);
 }
 
 .clock {

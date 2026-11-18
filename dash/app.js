@@ -386,10 +386,11 @@ function isoDay(ms) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function rowLink(href, ...cells) {
+function rowLink(href, tooltip, ...cells) {
   const a = document.createElement("a");
   a.className = "row";
   a.href = href;
+  a.title = tooltip;
   a.target = "_blank";
   a.rel = "noreferrer";
   a.append(...cells);
@@ -445,9 +446,18 @@ function renderEvents() {
       body.append(where);
     }
 
+    const span = row.allDay
+      ? "all day"
+      : `${timeLabel(row.startMs)}–${timeLabel(row.endMs)}`;
     const li = document.createElement("li");
     li.append(
-      rowLink(CAL_DAY(row.startMs), time, body, chip(row.calendar.label, row.color || row.calendar.color)),
+      rowLink(
+        CAL_DAY(row.startMs),
+        [span, row.location, row.calendar.label].filter(Boolean).join(" · "),
+        time,
+        body,
+        chip(row.calendar.label, row.color || row.calendar.color),
+      ),
     );
     $events.append(li);
   }
@@ -502,8 +512,15 @@ function renderTodos() {
 
     const cells = [day, body];
     if (todo.categories?.length) cells.push(chip(todo.categories[0], taskColour));
+    const when = todo.due === undefined ? "no due date" : new Date(todo.due).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
     const li = document.createElement("li");
-    li.append(rowLink(CAL_AGENDA, ...cells));
+    li.append(
+      rowLink(
+        CAL_AGENDA,
+        [todo.categories?.join(", "), when].filter(Boolean).join(" · "),
+        ...cells,
+      ),
+    );
     $tasks.append(li);
   }
   setExpand($tasksExpand, state.todos.length, MAX_TASKS, state.todosOpen, "tasks");
