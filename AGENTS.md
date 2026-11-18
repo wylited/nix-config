@@ -14,14 +14,13 @@ email is the ONLY one GitHub links to the wylited account.
 - `wyli@wyli.tech` is the ACME/ingress email (`modules/ingress.nix`) — it is
   NOT a commit identity. Never use it in git.
 - Message style: `<host-or-scope>: summary` (see `git log`).
-- **Guards (2026-11-18)**: `.mailmap` folds 13 historical commits with stray
-  addresses (`wyli@wyli.tech`, `wyli@warden`, …) onto the canonical identity at
-  display time — history was already public, so it is NOT rewritten.
-  `.githooks/pre-commit` refuses a commit whose name/email or
-  `GIT_AUTHOR_*`/`GIT_COMMITTER_*` differ from the canonical pair; CI's
-  `commit identity is wylited` step fails the same way. The hook only runs
-  where `core.hooksPath=.githooks` is set — clones made by hand need
-  `git config core.hooksPath .githooks` once.
+- **History (2026-11-18)**: rewritten so all 178 commits carry the canonical
+  identity — every SHA changed, so old links and clones are stale (re-clone, or
+  `git fetch && git checkout -B main origin/main`). `.githooks/pre-commit`
+  refuses a commit whose name/email or `GIT_AUTHOR_*`/`GIT_COMMITTER_*` differ
+  from the canonical pair; CI's `commit identity is wylited` step fails the
+  same way. The hook only runs where `core.hooksPath=.githooks` is set — clones
+  made by hand need `git config core.hooksPath .githooks` once.
 
 ## Deploy runbook (read before ANY rebuild)
 
