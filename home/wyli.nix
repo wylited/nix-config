@@ -59,8 +59,8 @@
     };
   };
 
-  # TODO (plan 07): move linux hosts to homeDirectory "/home/wyli" — either a
-  # `lib.mkIf pkgs.stdenv.isDarwin` split here or per-host override via
-  # home-manager.users.wyli.home.homeDirectory. Also: omp/pi config parity via
-  # home.file (see 07-omp-pi-parity.md).
+  # Agent CLIs (pi, omp) are npm/bun globals that self-update, so nix must not
+  # own them — parity is PATH-level on scout-darwin
+  # (environment.etc."zshenv.local" in hosts/scout-darwin/default.nix), not
+  # home.file. The linux hosts keep homeDirectory from their host module.
 }

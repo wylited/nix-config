@@ -128,6 +128,15 @@
       "DSH_CLIENT_COMMIT_HASH=wyli"
       "DSH_CLIENT_GIT_DIRTY=false"
     ];
+    # A rebuild runs pnpm install + a full client build on the immich box.
+    # Keep it below interactive work; the update is not latency-sensitive.
+    Nice = 15;
+    IOSchedulingClass = "idle";
+    CPUQuota = "800%";
+    # Successful runs are silent; a failure MUST leave a trace even when the
+    # Discord notifier also dies (2026-11-18: DNS blip killed both the fetch
+    # and the webhook, and the unit still claimed "notified").
+    ExecStopPost = "${pkgs.bash}/bin/bash -c 'if [ \"$EXIT_STATUS\" != 0 ]; then echo \"dsh-update failed rc=$EXIT_STATUS\" >&2; fi'";
   };
   systemd.services."dsh@a".serviceConfig.Environment = [
     "DSH_CLIENT_VERSION=0.2.2-rc.1"
@@ -139,11 +148,26 @@
     "DSH_CLIENT_COMMIT_HASH=wyli"
     "DSH_CLIENT_GIT_DIRTY=false"
   ];
+  # 2026-11-18 audit: no cgroup limits anywhere; one slot peaked at 5.4 GB RSS
+  # + 417 MB swap on a 16 GB box that also runs immich. MemoryMax leaves room
+  # for a node build; MemoryHigh makes the kernel reclaim before OOM.
+  systemd.services."dsh@a".serviceConfig = {
+    MemoryHigh = "6G";
+    MemoryMax = "8G";
+    CPUQuota = "1200%";
+    IOWeight = 100;
+  };
+  systemd.services."dsh@b".serviceConfig = {
+    MemoryHigh = "6G";
+    MemoryMax = "8G";
+    CPUQuota = "1200%";
+    IOWeight = 100;
+  };
 
-  # The daily update is a oneshot with no retry; a transient DNS failure at
-  # 2026-11-18 00:00 left the checkout stale for a day. Retry every 6h
-  # instead (fast-forward only; a no-op run costs one git fetch).
-  systemd.timers.dsh-update.timerConfig.OnCalendar = lib.mkForce "*-*-* 00/6:00:00";
+  # The update is a oneshot with no retry; a transient DNS failure at
+  # 2026-11-18 00:00 left the checkout stale for a day. Retry hourly
+  # (fast-forward only; a no-op run costs one git fetch).
+  systemd.timers.dsh-update.timerConfig.OnCalendar = lib.mkForce "*-*-* *:17:00";
 
   # latest immich from the rolling input (fleet nixpkgs pin ships 3.0.3;
   # fresh instance = zero migration risk) — 2026-10-26
@@ -179,11 +203,50 @@
     trustedInterfaces = [ "tailscale0" ];          # tailnet traffic unfiltered
     allowedTCPPorts = [ 22 22000 ];                # ssh + syncthing; immich :2283 via tailscale
     allowedUDPPorts = [ 22000 21027 ];             # syncthing quic + local discovery
+    # immich-server opens a second HTTP listener on 0.0.0.0:<ephemeral>
+    # (observed 38413; 404s everything, not in any config). ts-input ACCEPTs
+    # tailnet traffic before nixos-fw, so the only place to catch it is
+    # INPUT before ts-input. Loopback stays allowed.
+    extraCommands = ''
+      iptables -I INPUT 1 -p tcp --dport 38413 ! -i lo -j DROP
+    '';
+    extraStopCommands = ''
+      iptables -D INPUT -p tcp --dport 38413 ! -i lo -j DROP || true
+    '';
+  };
+
+  # A CTF session left a public Tailscale Funnel (tcp :10000 -> netcat on
+  # 127.0.0.1:4444) live for 8 days; funnel state lives on the control plane,
+  # not in nix, so a reboot never cleared it. Public ingress is an opt-in,
+  # per-session act — this resets any leftover config at boot.
+  systemd.services.tailnet-funnel-guard = {
+    description = "reset leftover Tailscale Funnel config (no persistent public ingress)";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "tailscaled.service" ];
+    wants = [ "tailscaled.service" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      if ${pkgs.tailscale}/bin/tailscale funnel status 2>/dev/null | grep -q 'Funnel on'; then
+        ${pkgs.tailscale}/bin/tailscale funnel reset
+      fi
+    '';
+  };
+
+  # No disk-health coverage existed: the 1 TB btrfs disk was never scrubbed
+  # (no stats) and smartd was not running.
+  services.smartd.enable = true;
+  services.btrfs.autoScrub = {
+    enable = true;
+    interval = "monthly";
+    fileSystems = [ "/" ];
   };
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   # dsh (the harness) installs its own software: `nix profile install nixpkgs#<pkg>` as the dsh user.
-  nix.settings.trusted-users = [ "root" "@wheel" "dsh" ];
+  # 2026-11-18: REMOVED — trusted-users lets that unauthenticated web agent
+  # add store paths as root (arbitrary code as root via the daemon). It keeps
+  # the system toolchain from /run/current-system/sw/bin instead.
+  nix.settings.trusted-users = [ "root" "@wheel" ];
   # plan 01/03 hygiene — the Mac's 103 generations are the cautionary tale:
   nix.gc = { automatic = true; dates = "weekly"; options = "--delete-older-than 30d"; };
   nix.settings.auto-optimise-store = true;
@@ -387,15 +450,16 @@
     linger = true;                                 # rex personal server survives logout
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
-      # dsh (the web agent on this host) may drive the deploy from its own
-      # checkout: ssh wyli@100.68.142.0 + the local NOPASSWD sudo. This is
-      # root-equivalent, same trust level as its docker group membership.
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKFzdW+WWiEcaz3Rs0Vg1+X5Iih2CaPdzdkISHsb9nAZ warden-dsh-deploy"
+      # dsh's deploy key removed 2026-11-18: the web agent is unauthenticated
+      # (tailnet/LAN reachable) and this key was NOPASSWD root. Fleet work
+      # belongs to a local interactive agent on the Mac over `ssh warden`.
     ];
   };
-  # dsh runs SWE work on warden; docker access is via the daemon socket.
-  # This is root-equivalent (docker group) by design — see the dsh module.
-  users.users.dsh.extraGroups = [ "docker" ];
+  # dsh runs SWE work on warden. 2026-11-18 audit: it had the docker group
+  # (root-equivalent) AND nix trusted-users AND the wyli SSH key — three
+  # independent root paths behind an unauthenticated web UI. All three are
+  # gone; dsh keeps its workspace, its toolchain, and systemd-managed updates.
+  users.users.dsh.extraGroups = [ ];
   # The module leaves the system user's passwd home at /var/empty while the
   # service sets HOME=/var/lib/dsh/home. OpenSSH reads ~/.ssh from the passwd
   # home, so git/ssh could not see the provisioned key/config. Point it at the

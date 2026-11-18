@@ -61,6 +61,16 @@ in
             lib.optionalString (n == "ds.ts.wyli.tech") ''
               @dsh_shell path / /index.html
               header @dsh_shell Cache-Control "no-store"
+
+              # dsh ships with authMode: trust-network — any tailnet device
+              # (phone, Android, the VPS) or LAN client on :443 got a shell
+              # as uid dsh, which was root-equivalent via docker. bcrypt of a
+              # random 32-char password; plaintext lives on warden at
+              # /etc/nix/dsh-web-password (0600) for recovery. Rotate with
+              # `caddy hash-password` and replace the hash here.
+              basic_auth {
+                wyli $2a$14$MAA3HF6hSM4b.9a4.94KMew6M4c0tZ1UTGsBRyA6jwqB1E8WCggBS
+              }
             ''
             + (if lib.isList p then ''
                 reverse_proxy ${lib.concatMapStringsSep " " (pt: "127.0.0.1:${toString pt}") p} {

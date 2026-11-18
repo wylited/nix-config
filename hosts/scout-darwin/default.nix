@@ -29,6 +29,15 @@ in
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
+  # Agent CLIs are npm/bun globals (pi self-updates; nix can't own the prefix),
+  # but a plain login shell must find them. nix-darwin's /etc/zshenv resets
+  # PATH from set-environment, then sources this file — so prepending here is
+  # the one seam that survives reboots. Without it `pi`/`omp` only resolve in
+  # harness-injected shells (observed 2026-11-18: clean `zsh -lc` had neither).
+  environment.etc."zshenv.local".text = ''
+    export PATH="$HOME/.npm-global/bin:$HOME/.bun/bin:$PATH"
+  '';
+
   environment.systemPackages = with pkgs; [
     inputs.rex.packages.${pkgs.stdenv.hostPlatform.system}.rex  # CLI; GUI app installed manually
     android-tools

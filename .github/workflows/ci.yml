@@ -31,9 +31,19 @@ jobs:
           - host: warden
             os: ubuntu-latest
             attr: nixosConfigurations.warden.config.system.build.toplevel
+          - host: scout-asahi
+            os: ubuntu-latest
+            attr: nixosConfigurations.scout-asahi.config.system.build.toplevel
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@v16
+      # warden's caddy vhosts and ACME block are gated on pathExists of the
+      # DNS-01 token file; without it CI evals a different (smaller) system
+      # than the one deployed. Only the PATH is read at eval time, never the
+      # value — leaving the file empty matches production shape.
+      - name: warden eval needs the DNS-01 token path
+        if: matrix.host == 'warden'
+        run: sudo mkdir -p /etc/nix && sudo touch /etc/nix/acme-desec-env
       - name: eval toplevel drvPath
         run: nix eval --raw .#${{ matrix.attr }}.drvPath
 
