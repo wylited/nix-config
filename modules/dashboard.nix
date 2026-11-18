@@ -28,8 +28,10 @@ in
             file_server
             encode zstd gzip
           }
-          header / Cache-Control "no-store"
-          header / X-Content-Type-Options "nosniff"
+          # no matcher: `/` is an exact-path match in caddy, so it only ever
+          # applied to index.html. These belong on every asset.
+          header Cache-Control "no-store"
+          header X-Content-Type-Options "nosniff"
         '';
       };
     };
