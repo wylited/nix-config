@@ -1,4 +1,8 @@
-// dash — clock, the next two weeks of calendar, service links.
+// dash — clock, weather, the next two weeks, open todos, service health.
+//
+// Calendar and tasks both come from radicale; clicks deep-link into wycal
+// (cal.ts.wyli.tech), which addresses a day, not an event: there is no per-event
+// route, so a click lands on that day's view.
 //
 // Calendar data comes from radicale through this vhost's /caldav/* proxy, so
 // the page stays same-origin. Radicale runs passwordless (auth.type = none —
@@ -22,7 +26,10 @@ const CALENDARS = [
 ];
 
 const HORIZON_DAYS = 14;
-const MAX_ROWS = 12;
+const MAX_EVENTS = 10;
+const MAX_TASKS = 7;
+const CAL_DAY = (ms) => `https://cal.ts.wyli.tech/#/?view=day&date=${isoDay(ms)}`;
+const CAL_AGENDA = "https://cal.ts.wyli.tech/#/?view=agenda";
 const USER = "wyli";
 const DAY = 86400000;
 const DOW = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
@@ -31,6 +38,13 @@ const $time = document.getElementById("time");
 const $date = document.getElementById("date");
 const $events = document.getElementById("events");
 const $horizon = document.getElementById("horizon");
+const $tasks = document.getElementById("tasks");
+const $todoMeta = document.getElementById("todo-meta");
+const $eventsExpand = document.getElementById("events-expand");
+const $tasksExpand = document.getElementById("tasks-expand");
+const $weather = document.getElementById("weather");
+
+const state = { events: [], todos: [], eventsOpen: false, todosOpen: false };
 
 /* ---------- clock ---------- */
 
@@ -276,6 +290,79 @@ function rowsFor(events, from, to) {
   return rows.filter((r) => r.endMs > from && r.startMs <= to);
 }
 
+/* ---------- todos ---------- */
+
+// VTODOs, not VEVENTs: passed/overdue ones would otherwise drown the list, and
+// radicale answers the same REPORT shape with a different comp-filter.
+function parseTodos(text) {
+  const out = [];
+  let cur = null;
+  for (const line of unfold(text)) {
+    if (line === "BEGIN:VTODO") {
+      cur = { status: "NEEDS-ACTION" };
+      continue;
+    }
+    if (line === "END:VTODO") {
+      if (cur && cur.summary) out.push(cur);
+      cur = null;
+      continue;
+    }
+    if (!cur) continue;
+    const p = prop(line);
+    if (!p) continue;
+    switch (p.name) {
+      case "UID":
+        cur.uid = p.value;
+        break;
+      case "SUMMARY":
+        cur.summary = unescapeText(p.value);
+        break;
+      case "DUE": {
+        const d = parseDate(p.value);
+        if (d) cur.due = d.ms;
+        break;
+      }
+      case "PRIORITY":
+        cur.priority = +p.value || 0;
+        break;
+      case "STATUS":
+        cur.status = p.value.toUpperCase();
+        break;
+      case "PERCENT-COMPLETE":
+        if (+p.value >= 100) cur.done = true;
+        break;
+      case "CATEGORIES":
+        cur.categories = p.value.split(",").map((c) => c.trim()).filter(Boolean);
+        break;
+    }
+  }
+  return out.filter(
+    (t) => !t.done && t.status !== "COMPLETED" && t.status !== "CANCELLED",
+  );
+}
+
+async function loadTodos() {
+  const body = `<?xml version="1.0" encoding="utf-8"?>
+<C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:prop><D:getetag/><C:calendar-data/></D:prop>
+  <C:filter><C:comp-filter name="VCALENDAR"><C:comp-filter name="VTODO"/></C:comp-filter></C:filter>
+</C:calendar-query>`;
+  const res = await fetch(`/caldav/${USER}/tasks/`, {
+    method: "REPORT",
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      Depth: "1",
+      Authorization: "Basic " + btoa(`${USER}:dash`),
+    },
+    body,
+  });
+  if (res.status !== 207 && !res.ok) throw new Error(`tasks: ${res.status}`);
+  const xml = new DOMParser().parseFromString(await res.text(), "application/xml");
+  return [...xml.getElementsByTagNameNS("urn:ietf:params:xml:ns:caldav", "calendar-data")].flatMap(
+    (node) => parseTodos(node.textContent),
+  );
+}
+
 /* ---------- render ---------- */
 
 function dayLabel(ms) {
@@ -294,14 +381,44 @@ function timeLabel(ms, allDay) {
   return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-function render(rows, hidden) {
+function isoDay(ms) {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function rowLink(href, ...cells) {
+  const a = document.createElement("a");
+  a.className = "row";
+  a.href = href;
+  a.target = "_blank";
+  a.rel = "noreferrer";
+  a.append(...cells);
+  return a;
+}
+
+function chip(text, colour) {
+  const span = document.createElement("span");
+  span.className = "chip";
+  span.style.setProperty("--c", colour);
+  span.textContent = text;
+  return span;
+}
+
+function setExpand(button, total, limit, open, noun) {
+  const hidden = Math.max(0, total - limit);
+  button.hidden = hidden === 0;
+  button.setAttribute("aria-expanded", String(open));
+  button.textContent = open ? "… less" : `… ${hidden} more ${noun}`;
+}
+
+function renderEvents() {
+  const rows = state.eventsOpen ? state.events : state.events.slice(0, MAX_EVENTS);
   $events.textContent = "";
   if (!rows.length) {
     const li = document.createElement("li");
     li.className = "empty";
     li.textContent = "nothing in the next two weeks";
     $events.append(li);
-    return;
   }
   let lastDay = "";
   for (const row of rows) {
@@ -313,9 +430,6 @@ function render(rows, hidden) {
       li.textContent = label;
       $events.append(li);
     }
-
-    const li = document.createElement("li");
-
     const time = document.createElement("time");
     time.textContent = timeLabel(row.startMs, row.allDay);
 
@@ -331,28 +445,79 @@ function render(rows, hidden) {
       body.append(where);
     }
 
-    const chip = document.createElement("span");
-    chip.className = "chip";
-    chip.style.setProperty("--c", row.color || row.calendar.color);
-    chip.textContent = row.calendar.label;
-
-    li.append(time, body, chip);
-    $events.append(li);
-  }
-  if (hidden > 0) {
     const li = document.createElement("li");
-    li.className = "more";
-    li.textContent = `+${hidden} more`;
+    li.append(
+      rowLink(CAL_DAY(row.startMs), time, body, chip(row.calendar.label, row.color || row.calendar.color)),
+    );
     $events.append(li);
   }
+  setExpand($eventsExpand, state.events.length, MAX_EVENTS, state.eventsOpen, "events");
 }
 
-async function refresh() {
+const taskColour = "#8a9199";
+
+function dueLabel(todo) {
+  if (todo.due === undefined) return { day: "—", sub: "", late: false };
+  const due = new Date(todo.due);
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+  const day = new Date(due);
+  day.setHours(0, 0, 0, 0);
+  const diff = Math.round((day - midnight) / DAY);
+  const minutes = due.getHours() * 60 + due.getMinutes();
+  const timed = minutes !== 0 && minutes !== 1439;
+  const sub = timed ? timeLabel(todo.due, false) : "";
+  if (diff < 0) return { day: `-${-diff}d`, sub, late: true };
+  if (diff === 0) return { day: "today", sub, late: todo.due < Date.now() };
+  if (diff === 1) return { day: "tomorrow", sub, late: false };
+  return { day: due.toLocaleDateString([], { weekday: "short", day: "numeric" }), sub, late: false };
+}
+
+function renderTodos() {
+  const rows = state.todosOpen ? state.todos : state.todos.slice(0, MAX_TASKS);
+  $tasks.textContent = "";
+  if (!rows.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "nothing open";
+    $tasks.append(li);
+  }
+  for (const todo of rows) {
+    const due = dueLabel(todo);
+    const day = document.createElement("time");
+    day.className = due.late ? "due overdue" : "due";
+    day.textContent = due.day;
+
+    const body = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = todo.summary;
+    body.append(title);
+    if (due.sub) {
+      const where = document.createElement("div");
+      where.className = "where";
+      where.textContent = `due ${due.sub}`;
+      body.append(where);
+    }
+
+    const cells = [day, body];
+    if (todo.categories?.length) cells.push(chip(todo.categories[0], taskColour));
+    const li = document.createElement("li");
+    li.append(rowLink(CAL_AGENDA, ...cells));
+    $tasks.append(li);
+  }
+  setExpand($tasksExpand, state.todos.length, MAX_TASKS, state.todosOpen, "tasks");
+  $todoMeta.textContent = state.todos.length ? `${state.todos.length} open` : "";
+}
+
+/* ---------- data ---------- */
+
+async function refreshEvents() {
   const now = Date.now();
   const to = now + HORIZON_DAYS * DAY;
   let failed = 0;
   const results = await Promise.all(
-    CALENDARS.map((cal) =>
+    CALENDARS.filter((cal) => cal.path !== "tasks").map((cal) =>
       loadCalendar(cal, now, to).catch(() => {
         failed++;
         return [];
@@ -363,31 +528,51 @@ async function refresh() {
   const all = results.flatMap((events) => rowsFor(events, now, to));
   all.sort((a, b) => a.startMs - b.startMs || (a.summary || "").localeCompare(b.summary || ""));
 
-  const unique = [];
   const seen = new Set();
-  for (const row of all) {
+  state.events = all.filter((row) => {
     const key = `${row.uid}:${row.startMs}`;
-    if (seen.has(key)) continue;
+    if (seen.has(key)) return false;
     seen.add(key);
-    unique.push(row);
-  }
+    return true;
+  });
 
-  render(unique.slice(0, MAX_ROWS), Math.max(0, unique.length - MAX_ROWS));
   $horizon.textContent = failed
     ? `next ${HORIZON_DAYS} days · ${failed} calendar(s) unreachable`
     : `next ${HORIZON_DAYS} days`;
+  renderEvents();
+}
+
+async function refreshTodos() {
+  try {
+    const todos = await loadTodos();
+    todos.sort((a, b) => {
+      const ad = a.due ?? Infinity;
+      const bd = b.due ?? Infinity;
+      if (ad !== bd) return ad - bd;
+      const ap = a.priority || 9;
+      const bp = b.priority || 9;
+      if (ap !== bp) return ap - bp;
+      return (a.summary || "").localeCompare(b.summary || "");
+    });
+    state.todos = todos;
+  } catch {
+    state.todos = [];
+  }
+  renderTodos();
 }
 
 /* ---------- service status ---------- */
 
 // Same-origin probes through this vhost's /svc/* proxies: a real request to the
 // real backend, so "up" means the service answered, not that a name resolves.
+// `detail` is filled from the response — a version when the service offers one,
+// otherwise a word for the status, because a bare dot cannot tell 200 from 401.
 const SERVICES = [
-  { name: "immich", probe: "/svc/immich/api/server/version", href: "https://immich.ts.wyli.tech" },
-  { name: "dsh", probe: "/svc/dsh/", href: "https://ds.ts.wyli.tech" },
-  { name: "sure", probe: "/svc/sure/users/sign_in", href: "https://sure.ts.wyli.tech" },
-  { name: "calendar", probe: "/svc/cal/", href: "https://cal.ts.wyli.tech" },
-  { name: "dav", probe: "/svc/dav/.web/", href: "https://dav.ts.wyli.tech" },
+  { name: "immich", probe: "/svc/immich/api/server/version", href: "https://immich.ts.wyli.tech", json: true },
+  { name: "deepseek-harness", probe: "/svc/dsh/", href: "https://ds.ts.wyli.tech" },
+  { name: "sure", probe: "/svc/sure/up", href: "https://sure.ts.wyli.tech" },
+  { name: "cal-ui", probe: "/svc/cal/", href: "https://cal.ts.wyli.tech" },
+  { name: "caldav", probe: "/svc/dav/.web/", href: "https://dav.ts.wyli.tech" },
 ];
 
 const $services = document.getElementById("services");
@@ -402,6 +587,14 @@ function servedMs(url) {
   return Math.round(entry.responseEnd - entry.requestStart);
 }
 
+function statusWord(status) {
+  if (status >= 500) return `error ${status}`;
+  if (status === 404) return "no route";
+  if (status === 401 || status === 403) return "auth";
+  if (status >= 300) return "redirect";
+  return "";
+}
+
 async function probe(svc) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000);
@@ -409,10 +602,14 @@ async function probe(svc) {
   try {
     const res = await fetch(svc.probe, { cache: "no-store", redirect: "manual", signal: ctrl.signal });
     const ms = servedMs(svc.probe) ?? Math.round(performance.now() - started);
-    if (res.status >= 500) return { state: "degraded", ms };
-    return { state: "up", ms };
+    let detail = statusWord(res.status);
+    if (svc.json && res.ok) {
+      const { major, minor, patch } = await res.json();
+      if (major !== undefined) detail = `${major}.${minor}.${patch}`;
+    }
+    return { state: res.status >= 500 ? "degraded" : "up", ms, status: res.status, detail };
   } catch {
-    return { state: "down", ms: null };
+    return { state: "down", ms: null, status: 0, detail: "" };
   } finally {
     clearTimeout(timer);
   }
@@ -422,16 +619,22 @@ async function refreshStatus() {
   const states = await Promise.all(SERVICES.map(probe));
   $services.textContent = "";
   SERVICES.forEach((svc, i) => {
-    const { state, ms } = states[i];
+    const { state, ms, status, detail } = states[i];
     const a = document.createElement("a");
     a.className = `tile ${state}`;
     a.href = svc.href;
-    a.title = state === "down" ? "no response" : state === "degraded" ? "server error" : `${ms} ms`;
+    a.title = state === "down" ? `${svc.name}: no response` : `${svc.name}: HTTP ${status} in ${ms} ms`;
 
     const dot = document.createElement("span");
     dot.className = "dot";
     a.append(dot, document.createTextNode(svc.name));
 
+    if (detail) {
+      const span = document.createElement("span");
+      span.className = "detail";
+      span.textContent = detail;
+      a.append(span);
+    }
     if (ms !== null) {
       const timing = document.createElement("span");
       timing.className = "ms";
@@ -441,6 +644,55 @@ async function refreshStatus() {
     $services.append(a);
   });
 }
+
+/* ---------- weather ---------- */
+
+const WMO = {
+  0: "clear", 1: "mostly clear", 2: "partly cloudy", 3: "overcast",
+  45: "fog", 48: "rime fog",
+  51: "light drizzle", 53: "drizzle", 55: "heavy drizzle", 56: "freezing drizzle", 57: "freezing drizzle",
+  61: "light rain", 63: "rain", 65: "heavy rain", 66: "freezing rain", 67: "freezing rain",
+  71: "light snow", 73: "snow", 75: "heavy snow", 77: "snow grains",
+  80: "light showers", 81: "showers", 82: "heavy showers", 85: "snow showers", 86: "heavy snow showers",
+  95: "thunderstorm", 96: "thunderstorm, hail", 99: "thunderstorm, hail",
+};
+
+async function loadWeather() {
+  const url =
+    "https://api.open-meteo.com/v1/forecast?latitude=22.2819&longitude=114.1582" +
+    "&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FHong_Kong";
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    const { current } = await res.json();
+    const parts = [
+      `${Math.round(current.temperature_2m)}°`,
+      WMO[current.weather_code] ?? "",
+      `${current.relative_humidity_2m}%`,
+    ].filter(Boolean);
+    $weather.textContent = "";
+    for (const part of parts) {
+      const span = document.createElement("span");
+      span.textContent = part;
+      $weather.append(span);
+    }
+    $weather.title = `Hong Kong · ${current.time.replace("T", " ")}`;
+    $weather.hidden = false;
+  } catch {
+    /* the clock is enough when the network is not */
+  }
+}
+
+/* ---------- expand ---------- */
+
+$eventsExpand.addEventListener("click", () => {
+  state.eventsOpen = !state.eventsOpen;
+  renderEvents();
+});
+
+$tasksExpand.addEventListener("click", () => {
+  state.todosOpen = !state.todosOpen;
+  renderTodos();
+});
 
 /* ---------- dsh inbox ---------- */
 
@@ -459,8 +711,14 @@ $toggle.addEventListener("click", () => {
 
 tick();
 setInterval(tick, 15000);
+loadWeather();
+setInterval(loadWeather, 900000);
 // Status first: the calendar pulls nine RFC 4918 REPORTs, and browsers cap
 // connections per origin — probing after them made the last probe look slow.
-refreshStatus().finally(() => refresh());
+refreshStatus().finally(() => {
+  refreshEvents();
+  refreshTodos();
+});
 setInterval(refreshStatus, 60000);
-setInterval(refresh, 300000);
+setInterval(refreshEvents, 300000);
+setInterval(refreshTodos, 300000);
