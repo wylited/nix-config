@@ -398,6 +398,9 @@
   # home, so git/ssh could not see the provisioned key/config. Point it at the
   # state dir the unit already uses.
   users.users.dsh.home = "/var/lib/dsh/home";
+  # OpenSSH wants ~/.ssh; the provision script keeps the real keys/config in
+  # the state dir. One symlink makes plain ssh/git work without flags.
+  systemd.tmpfiles.rules = [ "L+ /var/lib/dsh/home/.ssh - - - - /var/lib/dsh/.ssh" ];
 
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBuAd/BlQgZGZZ+6iAr0wsolROisfVsuvp+4h3KaARLJ wylited"
