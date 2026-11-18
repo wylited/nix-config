@@ -392,13 +392,23 @@ const SERVICES = [
 
 const $services = document.getElementById("services");
 
+// Server latency from the resource entry, not wall-clock around the await:
+// the first probe runs while nine calendar REPORTs are being parsed, and that
+// main-thread jank would otherwise show up as a slow service.
+function servedMs(url) {
+  const entries = performance.getEntriesByName(new URL(url, location.href).href, "resource");
+  const entry = entries[entries.length - 1];
+  if (!entry || !entry.requestStart) return null;
+  return Math.round(entry.responseEnd - entry.requestStart);
+}
+
 async function probe(svc) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000);
   const started = performance.now();
   try {
     const res = await fetch(svc.probe, { cache: "no-store", redirect: "manual", signal: ctrl.signal });
-    const ms = Math.round(performance.now() - started);
+    const ms = servedMs(svc.probe) ?? Math.round(performance.now() - started);
     if (res.status >= 500) return { state: "degraded", ms };
     return { state: "up", ms };
   } catch {
