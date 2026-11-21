@@ -82,6 +82,21 @@
         }
       '';
     };
+
+    # anki.ts.wyli.tech: official Anki sync server (services.anki-sync-server,
+    # loopback :27701). Hand-rolled rather than a wyli.ingress.routes entry
+    # because Anki's docs require a larger proxy read buffer for media sync.
+    # TLS floor: caddy's default (1.2) — iOS clients reject 1.3-only servers.
+    "https://anki.ts.wyli.tech" = {
+      useACMEHost = "ts.wyli.tech";
+      extraConfig = ''
+        reverse_proxy 127.0.0.1:27701 {
+          transport http {
+            read_buffer 512k
+          }
+        }
+      '';
+    };
   };
 
   # wycal — the CalDAV/CardDAV web client (github:wylited/wycal), nix-built
@@ -109,6 +124,23 @@
   # dash.ts.wyli.tech — clock, next two weeks of calendar, service links.
   wyli.dashboard.enable = true;
   services.dsh.trustedHosts = [ "ds.ts.wyli.tech" ];
+
+  # anki — official self-hosted sync server (replaces AnkiWeb for the desktop,
+  # AnkiMobile and AnkiDroid clients). State: /var/lib/anki-sync-server
+  # (DynamicUser + StateDirectory, so the root snapper config covers it).
+  # passwordFile is a STRING on purpose: a path literal would be copied into
+  # the world-readable store. Create /etc/nix/anki-passwd (root 0600) first —
+  # the unit's LoadCredential fails without it. One user only; add more entries
+  # (SYNC_USER1..N) if needed. Not exposed publicly: *.ts.wyli.tech resolves to
+  # warden's tailnet IP, so clients must be on the tailnet.
+  services.anki-sync-server = {
+    enable = true;
+    address = "127.0.0.1";
+    port = 27701;
+    users = [
+      { username = "wyli"; passwordFile = "/etc/nix/anki-passwd"; }
+    ];
+  };
 
   # dsh-update setpriv-drops to the dsh uid inside a root wrapper, but the
   # module's StateDirectory=dsh with no User= makes systemd re-own
