@@ -3,6 +3,10 @@
 # The proxy credentials in the config file are deliberately NOT in this repo:
 # it is public. The live config lives at the path below, mode 0600; its values
 # are derived from the Terraform outputs of ../../infra/gcp-ranger.
+#
+# Data path, rules, DNS, consumers, and failure modes:
+# ../../infra/gcp-ranger/VPN.md. 127.0.0.1:7890 follows rules; :7891 forces
+# the AI group for services that must always use the tunnel.
 { pkgs, ... }:
 
 let
