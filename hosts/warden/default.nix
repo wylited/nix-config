@@ -1,6 +1,6 @@
 # warden-nixos — the 5800H/16GB/1TB homeserver (renamed from warden-arch
 # 2026-11-16; it runs NixOS). Deployed (fresh NixOS install
-# 2026-10-08, plan 11); runs immich + radicale/wycal + caddy ingress + the
+# 2026-10-08, plan 11); runs immich + radicale/calino + caddy ingress + the
 # dev docker daemon (used over SSH from the Mac). Matrix and speaches were
 # torn down 2026-11-08 (user decisions — data deleted, no archive). Hardware-configuration regenerated at install.
 { config, lib, pkgs, inputs, ... }:
@@ -19,21 +19,21 @@
     ../../modules/sure.nix      # sure.ts.wyli.tech — personal finance (vendored compose behind caddy, 2026-11-15)
     ../../modules/caldav.nix    # radicale (moved here 2026-10-27; pi = flaky cold-standby)
     ../../modules/hardening.nix # fleet baseline: key-only sshd + journald caps (2026-10-26 audit)
-    inputs.wycal.nixosModules.wycal  # cal.ts.wyli.tech UI — darkhttpd on :8423 (2026-10-28)
+    ../../modules/calino.nix    # cal.ts.wyli.tech UI — calino static build on :8423 (2026-11-24)
     inputs.dsh.nixosModules.dsh     # ds.ts.wyli.tech — dsh web harness (:3080/:3081 blue-green, git-checkout service, 2026-11-09)
     ../../modules/dashboard.nix     # dash.ts.wyli.tech — static one-pager + /caldav proxy, 2026-11-18
   ];
 
   # caddy terminates the services that run here (dav gets a hand-rolled vhost
-  # below — it needs CORS for the wycal UI):
+  # below — it needs CORS for the calino UI):
   wyli.ingress.routes = {
     "immich.ts.wyli.tech" = 2283;
-    "cal.ts.wyli.tech"    = 8423;  # wycal static UI (services.wycal, darkhttpd)
+    "cal.ts.wyli.tech"    = 8423;  # calino static UI (services.calino, miniserve)
     "ds.ts.wyli.tech"     = [ 3080 3081 ];  # dsh web UI (services.dsh), blue-green slots a/b — caddy health-checks both
   };
   # dav.ts.wyli.tech: radicale is LOCAL (pi = cold-standby, 2026-10-27). CORS
-  # keeps local-dev UIs (wycal) working cross-origin; CalDAV needs the
-  # headers and PROPFIND/OPTIONS methods listed.
+  # keeps the calino UI working cross-origin; CalDAV needs the headers and the
+  # methods listed (PROPPATCH is Calino's settings-calendar dead property).
   # Guard split (see modules/ingress.nix): serve on the existing cert even
   # without the desec renewal token.
   services.caddy.virtualHosts = lib.mkIf (builtins.pathExists "/etc/nix/acme-desec-env" || builtins.pathExists "/var/lib/acme/ts.wyli.tech/fullchain.pem") {
@@ -44,7 +44,7 @@
         @cors_preflight method OPTIONS
         respond @cors_preflight 204
         header Access-Control-Allow-Origin "*"
-        header Access-Control-Allow-Methods "GET, PUT, PROPFIND, OPTIONS, DELETE, REPORT, MKCOL, MOVE"
+        header Access-Control-Allow-Methods "GET, HEAD, PUT, POST, PROPFIND, PROPPATCH, REPORT, OPTIONS, DELETE, MKCOL, MKCALENDAR, MOVE, COPY"
         header Access-Control-Allow-Headers "Authorization, Depth, Content-Type, If-Match, If-None-Match, Prefer"
         header Access-Control-Expose-Headers "ETag, DAV"
       '';
@@ -99,13 +99,12 @@
     };
   };
 
-  # wycal — the CalDAV/CardDAV web client (github:wylited/wycal), nix-built
+  # calino — the CalDAV/CardDAV web client (modules/calino.nix), nix-built
   # static site on :8423 behind the cal.ts.wyli.tech vhost above. Talks
-  # cross-origin to radicale via dav.ts.wyli.tech (CORS there).
-  services.wycal = {
-    enable = true;
-    package = inputs.wycal.packages.x86_64-linux.default;
-  };
+  # cross-origin to radicale via dav.ts.wyli.tech (CORS there). The account,
+  # dummy password, and master password are preconfigured in the module, so
+  # the first load is already connected — no login, no setup screen.
+  services.calino.enable = true;
 
   # sure — personal finance (modules/sure.nix, vendored compose behind caddy).
   # Secrets: /var/lib/sure/sure.env (root 0600) — created once by hand, the

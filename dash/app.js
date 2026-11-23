@@ -1,8 +1,8 @@
 // dash — clock, weather, the next two weeks, open todos, service health.
 //
-// Calendar and tasks both come from radicale; clicks deep-link into wycal
-// (cal.ts.wyli.tech), which addresses a day, not an event: there is no per-event
-// route, so a click lands on that day's view.
+// Calendar and tasks both come from radicale; clicks deep-link into calino
+// (cal.ts.wyli.tech). Calino routes by view, not by event or day, so a click
+// lands on that view's page.
 //
 // Calendar data comes from radicale through this vhost's /caldav/* proxy, so
 // the page stays same-origin. Radicale runs passwordless (auth.type = none —
@@ -28,8 +28,8 @@ const CALENDARS = [
 const HORIZON_DAYS = 14;
 const MAX_EVENTS = 10;
 const MAX_TASKS = 7;
-const CAL_DAY = (ms) => `https://cal.ts.wyli.tech/#/?view=day&date=${isoDay(ms)}`;
-const CAL_AGENDA = "https://cal.ts.wyli.tech/#/?view=agenda";
+const CAL_DAY = () => "https://cal.ts.wyli.tech/day";
+const CAL_AGENDA = "https://cal.ts.wyli.tech/agenda";
 const USER = "wyli";
 const DAY = 86400000;
 const DOW = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
@@ -381,11 +381,6 @@ function timeLabel(ms, allDay) {
   return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-function isoDay(ms) {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 function rowLink(href, tooltip, ...cells) {
   const a = document.createElement("a");
   a.className = "row";
@@ -452,7 +447,7 @@ function renderEvents() {
     const li = document.createElement("li");
     li.append(
       rowLink(
-        CAL_DAY(row.startMs),
+        CAL_DAY(),
         [span, row.location, row.calendar.label].filter(Boolean).join(" · "),
         time,
         body,
