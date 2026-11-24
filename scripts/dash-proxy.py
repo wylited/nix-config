@@ -8,11 +8,12 @@ Serves JSON on the tailnet for warden's Caddy to proxy as /proxy/*:
 
 Egress source: GCP Monitoring
 `compute.googleapis.com/instance/network/sent_bytes_count`, summed over all GCE
-instances in the project for the current UTC month. It is a conservative
-over-estimate of billable Premium egress: it includes free Google traffic and
-does not subtract the 1 GiB free allowance. The dashboard labels it as an
-estimate. The metric survives instance replacement for the retention window,
-so a recreated ranger does not reset the month.
+instances in the project for the current UTC month. It is the same metric
+family GCP bills from, so use it as the practical figure: it includes some
+free Google traffic and under-reads the NIC by roughly 0.1 GB/month, and it
+does not subtract the 1 GiB free allowance (the script does). The metric
+survives instance replacement for the retention window, so a recreated ranger
+does not reset the month. GCP ingestion lags by ~4 minutes.
 
 Delay source: mihomo's own probe for the `ranger-in` proxy. This is the real
 client-side proxy delay, not a TCP RTT.
