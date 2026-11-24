@@ -657,6 +657,67 @@ async function refreshStatus() {
   });
 }
 
+/* ---------- proxy ---------- */
+
+const $proxyMeta = document.getElementById("proxy-meta");
+const $proxyEgress = document.getElementById("proxy-egress");
+const $proxyBar = document.getElementById("proxy-bar");
+const $proxyEgressNote = document.getElementById("proxy-egress-note");
+const $proxyDelay = document.getElementById("proxy-delay");
+const $proxyDelayNote = document.getElementById("proxy-delay-note");
+
+function fmtGB(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return `${n < 0.01 && n > 0 ? "<0.01" : n.toFixed(2)} GB`;
+}
+
+function renderProxy(data) {
+  const e = data.egress || {};
+  if (typeof e.total_gb === "number") {
+    $proxyEgress.textContent = fmtGB(e.total_gb);
+    const pct = Math.max(0, Math.min(100, Number(e.pct) || 0));
+    $proxyBar.style.width = `${pct}%`;
+    $proxyBar.className = pct >= 90 ? "danger" : pct >= 70 ? "warn" : "";
+    $proxyEgressNote.textContent =
+      `${fmtGB(e.billable_gb)} billable · $${Number(e.cost_usd || 0).toFixed(2)} · ` +
+      `${pct.toFixed(0)}% of ${Number(e.budget_gb || 17).toFixed(0)} GB` +
+      (e.stale ? " · stale" : "");
+  } else {
+    $proxyEgress.textContent = "—";
+    $proxyBar.style.width = "0";
+    $proxyEgressNote.textContent = e.error ? "egress unavailable" : "loading…";
+  }
+
+  if (typeof data.delay_ms === "number") {
+    $proxyDelay.textContent = `${data.delay_ms} ms`;
+    $proxyDelayNote.textContent = "ranger-in · mihomo probe";
+  } else {
+    $proxyDelay.textContent = "—";
+    $proxyDelayNote.textContent = data.delay_error ? "unavailable" : "loading…";
+  }
+
+  const stamp = data.updated ? new Date(data.updated) : null;
+  $proxyMeta.textContent =
+    stamp && !Number.isNaN(stamp.getTime())
+      ? `updated ${stamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}`
+      : "—";
+}
+
+async function loadProxy() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const res = await fetch("/proxy/status", { cache: "no-store", signal: ctrl.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    renderProxy(await res.json());
+  } catch {
+    $proxyMeta.textContent = "unavailable";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /* ---------- weather ---------- */
 
 const WMO = {
@@ -720,6 +781,8 @@ tick();
 setInterval(tick, 15000);
 loadWeather();
 setInterval(loadWeather, 900000);
+loadProxy();
+setInterval(loadProxy, 30000);
 // Status first: the calendar pulls nine RFC 4918 REPORTs, and browsers cap
 // connections per origin — probing after them made the last probe look slow.
 refreshStatus().finally(() => {

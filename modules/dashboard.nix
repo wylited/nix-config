@@ -47,6 +47,12 @@ in
               lb_try_duration 2s
             }
           }
+          # Mac-side collector for GCP egress + mihomo delay. Tailnet-only
+          # HTTP; this vhost is the only entry point. If the Mac is asleep the
+          # panel shows "unavailable" rather than blocking the page.
+          handle_path /proxy/* {
+            reverse_proxy http://100.84.47.44:9091
+          }
           handle {
             root * ${../dash}
             file_server

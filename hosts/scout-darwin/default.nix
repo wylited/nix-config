@@ -8,7 +8,7 @@ let
   }).androidsdk;
 in
 {
-  imports = [ ../../modules/mihomo.nix ];
+  imports = [ ../../modules/mihomo.nix ../../modules/dash-proxy.nix ];
 
   nixpkgs.hostPlatform = "aarch64-darwin";
   nixpkgs.config.allowUnfree = true;

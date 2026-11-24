@@ -133,6 +133,61 @@ h2 {
   border-bottom: 1px solid var(--border);
 }
 
+.proxy {
+  margin-bottom: 14px;
+}
+
+.proxy-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px 14px 14px;
+}
+
+.proxy-metric + .proxy-metric {
+  border-left: 1px solid var(--border-soft);
+  padding-left: 14px;
+}
+
+.proxy-label {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.proxy-value {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.15;
+  color: var(--fg-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  height: 4px;
+  margin: 9px 0 7px;
+  background: var(--border-soft);
+}
+
+.bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.bar span.warn {
+  background: #d99a2b;
+}
+
+.bar span.danger {
+  background: var(--danger);
+}
+
 .events,
 .tasks {
   margin: 0;
@@ -394,6 +449,15 @@ footer {
   }
   #time {
     font-size: 30px;
+  }
+  .proxy-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .proxy-metric + .proxy-metric {
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid var(--border-soft);
+    padding-top: 10px;
   }
   .row,
   .tasks .row {
