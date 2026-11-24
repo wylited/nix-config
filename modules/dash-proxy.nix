@@ -14,7 +14,7 @@ let
   port = 9091;
 in
 {
-  launchd.daemons.dash-proxy = {
+  launchd.user.agents.dash-proxy = {
     script = ''
       mkdir -p /Users/wyli/Library/Logs
       exec ${pkgs.python3}/bin/python3 ${../scripts/dash-proxy.py} \
@@ -23,7 +23,6 @@ in
 
     serviceConfig = {
       Label = "org.nixos.dash-proxy";
-      UserName = "wyli";
       RunAtLoad = true;
       KeepAlive = true;
       ProcessType = "Background";
