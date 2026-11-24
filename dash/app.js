@@ -681,7 +681,7 @@ function renderProxy(data) {
     $proxyBar.className = pct >= 90 ? "danger" : pct >= 70 ? "warn" : "";
     $proxyEgressNote.textContent =
       `${fmtGB(e.billable_gb)} billable · $${Number(e.cost_usd || 0).toFixed(2)} · ` +
-      `${pct.toFixed(0)}% of ${Number(e.budget_gb || 17).toFixed(0)} GB` +
+      `${pct.toFixed(0)}% of ${Number(e.budget_gb || 17).toFixed(0)} GB · GCP ~4 min behind` +
       (e.stale ? " · stale" : "");
   } else {
     $proxyEgress.textContent = "—";
